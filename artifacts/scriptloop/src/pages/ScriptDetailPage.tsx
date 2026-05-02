@@ -1,3 +1,4 @@
+import { useCallback, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
@@ -9,6 +10,7 @@ import {
 } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { AudioPlayer } from "@/components/AudioPlayer";
+import { ProgressiveText } from "@/components/ProgressiveText";
 import {
   useDeleteScript,
   useScript,
@@ -25,6 +27,12 @@ export default function ScriptDetailPage() {
     useScript(scriptId);
   const { data: voices } = useVoices();
   const deleteScript = useDeleteScript();
+
+  const [loopCount, setLoopCount] = useState(0);
+  const handleLoopComplete = useCallback(
+    () => setLoopCount((n) => n + 1),
+    [],
+  );
 
   const handleDelete = async () => {
     if (!scriptId || !script) return;
@@ -138,6 +146,7 @@ export default function ScriptDetailPage() {
               src={script.audioUrl}
               gapSeconds={script.loopGapSeconds ?? 2}
               defaultLooping
+              onLoopComplete={handleLoopComplete}
             />
           ) : (
             <Button asChild variant="secondary">
@@ -152,9 +161,11 @@ export default function ScriptDetailPage() {
           <CardTitle className="text-base">Script</CardTitle>
         </CardHeader>
         <CardContent>
-          <pre className="whitespace-pre-wrap font-mono text-sm leading-relaxed">
-            {script.content || "(empty)"}
-          </pre>
+          <ProgressiveText
+            text={script.content || ""}
+            loopCount={loopCount}
+            hideStrategy="random"
+          />
         </CardContent>
       </Card>
     </main>
