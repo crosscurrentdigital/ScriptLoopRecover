@@ -1,17 +1,4 @@
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
-import { and, eq } from "drizzle-orm";
-import { db } from "../../src/db/index";
-import { scripts } from "../../src/db/schema";
-import { textToSpeech, getVoices } from "../../src/lib/elevenlabs";
-
-const s3 = new S3Client({
-  region: "auto",
-  endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
-  credentials: {
-    accessKeyId: process.env.R2_ACCESS_KEY_ID ?? "",
-    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY ?? "",
-  },
-});
+import { getVoices } from "../../src/lib/elevenlabs";
 
 async function getSession(
   req: Request,
@@ -59,78 +46,6 @@ export default async (req: Request) => {
       const msg = e instanceof Error ? e.message : "Unknown error";
       return json({ error: msg }, 502);
     }
-  }
-
-  if (url.pathname.endsWith("/generate") && req.method === "POST") {
-    const body = (await req.json()) as {
-      scriptId: number;
-      voiceId: string;
-    };
-
-    if (!body.scriptId || !body.voiceId) {
-      return json({ error: "scriptId and voiceId are required" }, 400);
-    }
-
-    const [script] = await db
-      .select()
-      .from(scripts)
-      .where(
-        and(
-          eq(scripts.id, body.scriptId),
-          eq(scripts.userId, session.userId),
-        ),
-      );
-
-    if (!script) return json({ error: "Script not found" }, 404);
-    if (!script.content?.trim()) {
-      return json({ error: "Script content is empty" }, 400);
-    }
-
-    let audioBuffer: ArrayBuffer;
-    try {
-      audioBuffer = await textToSpeech(apiKey, {
-        voiceId: body.voiceId,
-        text: script.content,
-      });
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : "TTS failed";
-      return json({ error: msg }, 502);
-    }
-
-    const key = `audio/${session.userId}/${script.id}-${Date.now()}.mp3`;
-    try {
-      await s3.send(
-        new PutObjectCommand({
-          Bucket: process.env.R2_BUCKET_NAME,
-          Key: key,
-          Body: new Uint8Array(audioBuffer),
-          ContentType: "audio/mpeg",
-        }),
-      );
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : "R2 upload failed";
-      return json({ error: msg }, 502);
-    }
-
-    const publicUrl = `${process.env.R2_PUBLIC_URL?.replace(/\/$/, "")}/${key}`;
-
-    const [updated] = await db
-      .update(scripts)
-      .set({
-        audioUrl: publicUrl,
-        audioSource: "tts",
-        voiceId: body.voiceId,
-        updatedAt: new Date(),
-      })
-      .where(
-        and(
-          eq(scripts.id, body.scriptId),
-          eq(scripts.userId, session.userId),
-        ),
-      )
-      .returning();
-
-    return json(updated);
   }
 
   return json({ error: "Not found" }, 404);

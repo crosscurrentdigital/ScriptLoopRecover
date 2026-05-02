@@ -1,5 +1,9 @@
 import { textToSpeech } from "../../src/lib/elevenlabs";
 import { uploadBufferToR2 } from "../../src/lib/r2-server";
+import {
+  attachAudioToScript,
+  getScriptForUser,
+} from "../../src/lib/scripts-server";
 
 const MAX_TEXT_LENGTH = 2000;
 const DEFAULT_BITRATE_BPS = 128_000;
@@ -131,9 +135,17 @@ export default async (req: Request): Promise<Response> => {
     return json({ error: "Invalid JSON body" }, 400);
   }
 
-  const body = payload as { text?: unknown; voiceId?: unknown };
+  const body = payload as {
+    text?: unknown;
+    voiceId?: unknown;
+    scriptId?: unknown;
+  };
   const text = typeof body.text === "string" ? body.text : "";
   const voiceId = typeof body.voiceId === "string" ? body.voiceId : "";
+  const scriptId =
+    typeof body.scriptId === "number" && Number.isFinite(body.scriptId)
+      ? body.scriptId
+      : null;
 
   if (!text.trim()) {
     return json({ error: "text is required" }, 400);
@@ -146,6 +158,13 @@ export default async (req: Request): Promise<Response> => {
   }
   if (!voiceId.trim()) {
     return json({ error: "voiceId is required" }, 400);
+  }
+
+  // Pre-flight ownership check: refuse to spend ElevenLabs credits on a
+  // script the caller doesn't own (or that doesn't exist).
+  if (scriptId !== null) {
+    const owned = await getScriptForUser(scriptId, session.userId);
+    if (!owned) return json({ error: "Script not found" }, 404);
   }
 
   let audioBuffer: ArrayBuffer;
@@ -170,7 +189,26 @@ export default async (req: Request): Promise<Response> => {
 
   const durationSeconds = estimateDurationSeconds(audioBytes, text);
 
-  return json({ audioUrl: publicUrl, durationSeconds });
+  let script = null;
+  if (scriptId !== null) {
+    try {
+      script = await attachAudioToScript({
+        scriptId,
+        userId: session.userId,
+        audioUrl: publicUrl,
+        voiceId,
+        audioSource: "elevenlabs",
+      });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Failed to save audio link";
+      return json({ error: msg }, 500);
+    }
+    if (!script) {
+      return json({ error: "Script not found" }, 404);
+    }
+  }
+
+  return json({ audioUrl: publicUrl, durationSeconds, script });
 };
 
 export const config = {

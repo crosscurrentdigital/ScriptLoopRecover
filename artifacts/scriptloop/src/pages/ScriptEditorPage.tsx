@@ -177,7 +177,10 @@ function EditorBody({ mode, script, initial }: EditorBodyProps) {
       return;
     }
     try {
-      await generateAudio.mutateAsync(draft.voiceId);
+      await generateAudio.mutateAsync({
+        text: draft.content,
+        voiceId: draft.voiceId,
+      });
       toast({ title: "Audio generated" });
     } catch (e) {
       toast({

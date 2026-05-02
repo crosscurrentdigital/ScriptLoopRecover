@@ -93,17 +93,28 @@ export function useVoices() {
   });
 }
 
+export interface GenerateAudioInput {
+  text: string;
+  voiceId: string;
+}
+
+export interface GenerateAudioResponse {
+  audioUrl: string;
+  durationSeconds: number;
+  script: Script | null;
+}
+
 export function useGenerateAudio(scriptId: number) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (voiceId: string) =>
-      http<Script>("/api/audio/generate", {
+    mutationFn: ({ text, voiceId }: GenerateAudioInput) =>
+      http<GenerateAudioResponse>("/api/generate-audio", {
         method: "POST",
-        body: JSON.stringify({ scriptId, voiceId }),
+        body: JSON.stringify({ text, voiceId, scriptId }),
       }),
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ["scripts"] });
-      qc.setQueryData(["scripts", scriptId], data);
+      if (data.script) qc.setQueryData(["scripts", scriptId], data.script);
     },
   });
 }
