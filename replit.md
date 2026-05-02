@@ -10,7 +10,7 @@ pnpm workspace monorepo using TypeScript. The primary artifact is ScriptLoop —
 - **Styling**: Tailwind CSS v4 + shadcn/ui
 - **Routing**: React Router v6
 - **Data fetching**: TanStack Query
-- **Auth**: Better Auth (email/password, Drizzle adapter)
+- **Auth**: Neon Auth (`@neondatabase/auth@0.3.0-beta`, email/password). Pinned to a beta — see `artifacts/scriptloop/KNOWN_RISKS.md`.
 - **Database**: Drizzle ORM + Neon (PostgreSQL)
 - **Storage**: Cloudflare R2 + AWS S3 SDK
 - **Audio**: ElevenLabs
@@ -47,37 +47,67 @@ In integration tests, ElevenLabs, R2, and `getSession` are stubbed; the database
 ```
 artifacts/scriptloop/
   src/
-    auth/
-      client.ts       - Better Auth browser client
-      server.ts       - Better Auth server config (Node.js only)
-    db/
-      schema.ts       - Drizzle schema (auth tables + scripts)
-      index.ts        - Neon HTTP connection
     lib/
+      auth-client.ts  - Neon Auth browser client (createAuthClient + BetterAuthReactAdapter)
       elevenlabs.ts   - ElevenLabs TTS client
-      r2.ts           - R2 upload helper
+      r2.ts           - R2 upload helper (browser side)
+      r2-server.ts    - R2 upload helper (functions side)
+      api.ts          - React Query hooks + ApiError
+      sentry.ts       - Browser Sentry init (env-gated)
+      plausible.ts    - Runtime Plausible script injection (prod-only)
+    db/
+      schema.ts       - Drizzle schema (scripts, rate_limits, neon_auth.user FK ref)
+      index.ts        - Neon HTTP connection
     pages/
-      LoginPage.tsx
-      RegisterPage.tsx
+      LoginPage.tsx            - renders Neon Auth <AuthView view="signIn">
+      RegisterPage.tsx         - renders Neon Auth <AuthView view="signUp">
       DashboardPage.tsx
       ScriptEditorPage.tsx     - editor at /scripts/new and /scripts/:id/edit
       ScriptDetailPage.tsx     - read-only playback at /scripts/:id
+      PrivacyPage.tsx, TermsPage.tsx
       NotFoundPage.tsx         - 404 fallback
     components/
       AudioPlayer.tsx          - shared looping <audio> with gap timer
-      ScriptEditor.tsx         - standalone editor UI (Task 2 / Agent 2)
       editor/                  - VoicePicker, CharacterCount, mockGenerateAudio
       ui/                      - shadcn/ui components
   netlify/
     functions/
-      auth.ts         - Better Auth handler (/api/auth/*)
+      _lib/
+        session.ts    - getSession() calls Neon Auth's /api/auth/get-session
+        sentry.ts     - withSentry wrapper + captureFunctionError
+        rateLimit.ts  - checkAndIncrement + 429 Response builder
       scripts.ts      - Scripts CRUD (/api/scripts/*)
+      generate-audio.ts - ElevenLabs + R2 + DB attach (rate-limited)
+      audio.ts        - /api/audio/voices + /api/audio/quota
       storage.ts      - R2 presign (/api/storage/presign)
+      cleanup-rate-limits.ts - Scheduled (@daily) purge of old rate_limits rows
   .env.template       - Required environment variables
   .gitignore
   drizzle.config.ts
   netlify.toml
 ```
+
+## Auth
+
+Auth is handled end-to-end by **Neon Auth** (`@neondatabase/auth`, a
+hosted Better-Auth-derived service). The browser uses
+`createAuthClient(VITE_NEON_AUTH_URL, { adapter: BetterAuthReactAdapter() })`
+in `src/lib/auth-client.ts`; the sign-in / sign-up screens
+(`src/pages/LoginPage.tsx`, `RegisterPage.tsx`) just render Neon's
+`<AuthView>` component, so credentials, the cookie, and the user row
+in `neon_auth.user` are all owned upstream — there is **no** local
+sessions table and no `BETTER_AUTH_SECRET` to manage.
+
+Server-side, every Netlify function calls
+`getSession(req)` from `netlify/functions/_lib/session.ts`, which
+forwards the incoming `Cookie` header to
+`${VITE_NEON_AUTH_URL}/api/auth/get-session` and returns
+`{ userId } | null`. Handlers treat `null` as 401 and use the returned
+`userId` to scope every DB query (the `scripts` table FKs into
+`neon_auth.user`). Anyone touching auth: the only env var you need is
+`VITE_NEON_AUTH_URL`, the dependency is pinned to the exact beta in
+`KNOWN_RISKS.md`, and the smoke flow to re-run after any auth change
+is documented there.
 
 ## Audio privacy posture
 
@@ -143,15 +173,21 @@ copy in privacy/terms, consent component removed, cache-control to
 
 ```
 DATABASE_URL          - Neon PostgreSQL connection string
-BETTER_AUTH_SECRET    - 32+ char random secret
-BETTER_AUTH_URL       - App base URL
+VITE_NEON_AUTH_URL    - Neon Auth URL (Neon Console → Auth → Configuration). Read by both the browser client (src/lib/auth-client.ts) and netlify/functions/_lib/session.ts.
 ELEVENLABS_API_KEY    - ElevenLabs API key
 R2_ACCOUNT_ID         - Cloudflare account ID
 R2_ACCESS_KEY_ID      - R2 access key
 R2_SECRET_ACCESS_KEY  - R2 secret key
 R2_BUCKET_NAME        - R2 bucket name
 R2_PUBLIC_URL         - R2 public base URL
+VITE_SENTRY_DSN       - optional, browser Sentry DSN
+SENTRY_DSN            - optional, Netlify-functions Sentry DSN
+VITE_PLAUSIBLE_DOMAIN - optional, Plausible domain (prod-only)
 ```
+
+There is no `BETTER_AUTH_SECRET` / `BETTER_AUTH_URL` — Neon Auth is a
+hosted service, so there is nothing to sign on our side. Do not
+re-introduce those vars.
 
 ## Monorepo Tool
 
