@@ -7,6 +7,8 @@ import LoginPage from "@/pages/LoginPage";
 import RegisterPage from "@/pages/RegisterPage";
 import DashboardPage from "@/pages/DashboardPage";
 import ScriptEditorPage from "@/pages/ScriptEditorPage";
+import ScriptDetailPage from "@/pages/ScriptDetailPage";
+import NotFoundPage from "@/pages/NotFoundPage";
 
 const queryClient = new QueryClient();
 
@@ -80,10 +82,19 @@ function AppRoutes() {
           path="/scripts/:id"
           element={
             <ProtectedRoute>
+              <ScriptDetailPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/scripts/:id/edit"
+          element={
+            <ProtectedRoute>
               <ScriptEditorPage />
             </ProtectedRoute>
           }
         />
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
       <Toaster />
     </NeonAuthUIProvider>

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { AudioPlayer } from "@/components/AudioPlayer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -144,7 +145,7 @@ function EditorBody({ mode, script, initial }: EditorBodyProps) {
         });
         clearDraft();
         toast({ title: "Script created" });
-        navigate(`/scripts/${created.id}`);
+        navigate(`/scripts/${created.id}/edit`);
       } else if (scriptId) {
         await updateScript.mutateAsync({
           title: draft.title,
@@ -320,78 +321,18 @@ function EditorBody({ mode, script, initial }: EditorBodyProps) {
             )}
 
             {script?.audioUrl && (
-              <LoopPlayer src={script.audioUrl} gapSeconds={draft.loopGapSeconds} />
+              <div className="space-y-2">
+                <AudioPlayer src={script.audioUrl} gapSeconds={draft.loopGapSeconds} />
+                <div className="text-right">
+                  <Button asChild variant="link" size="sm">
+                    <Link to={`/scripts/${script.id}`}>Open playback view →</Link>
+                  </Button>
+                </div>
+              </div>
             )}
           </CardContent>
         </Card>
       </main>
-    </div>
-  );
-}
-
-function LoopPlayer({ src, gapSeconds }: { src: string; gapSeconds: number }) {
-  const audioRef = useRef<HTMLAudioElement>(null);
-  const timer = useRef<number | undefined>(undefined);
-  const [isLooping, setIsLooping] = useState(false);
-  const isLoopingRef = useRef(isLooping);
-
-  useEffect(() => {
-    isLoopingRef.current = isLooping;
-    if (!isLooping && timer.current !== undefined) {
-      window.clearTimeout(timer.current);
-      timer.current = undefined;
-    }
-  }, [isLooping]);
-
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-
-    const handleEnded = () => {
-      if (!isLoopingRef.current) return;
-      timer.current = window.setTimeout(() => {
-        timer.current = undefined;
-        if (!isLoopingRef.current) return;
-        audio.currentTime = 0;
-        audio.play().catch(() => {
-          /* autoplay may be blocked */
-        });
-      }, gapSeconds * 1000);
-    };
-
-    audio.addEventListener("ended", handleEnded);
-    return () => {
-      audio.removeEventListener("ended", handleEnded);
-      if (timer.current !== undefined) {
-        window.clearTimeout(timer.current);
-        timer.current = undefined;
-      }
-    };
-  }, [gapSeconds]);
-
-  return (
-    <div className="space-y-2 rounded-md border p-3">
-      <audio
-        ref={audioRef}
-        src={src}
-        controls
-        className="w-full"
-        preload="metadata"
-      />
-      <div className="flex items-center gap-2">
-        <Button
-          size="sm"
-          variant={isLooping ? "default" : "outline"}
-          onClick={() => setIsLooping((v) => !v)}
-        >
-          {isLooping ? "Looping ✓" : "Loop"}
-        </Button>
-        <span className="text-xs text-muted-foreground">
-          {isLooping
-            ? `Will replay with a ${gapSeconds}s gap`
-            : "Toggle to auto-replay"}
-        </span>
-      </div>
     </div>
   );
 }

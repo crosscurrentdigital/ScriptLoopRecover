@@ -48,7 +48,14 @@ artifacts/scriptloop/
       LoginPage.tsx
       RegisterPage.tsx
       DashboardPage.tsx
-    components/ui/    - shadcn/ui components
+      ScriptEditorPage.tsx     - editor at /scripts/new and /scripts/:id/edit
+      ScriptDetailPage.tsx     - read-only playback at /scripts/:id
+      NotFoundPage.tsx         - 404 fallback
+    components/
+      AudioPlayer.tsx          - shared looping <audio> with gap timer
+      ScriptEditor.tsx         - standalone editor UI (Task 2 / Agent 2)
+      editor/                  - VoicePicker, CharacterCount, mockGenerateAudio
+      ui/                      - shadcn/ui components
   netlify/
     functions/
       auth.ts         - Better Auth handler (/api/auth/*)
@@ -78,6 +85,27 @@ R2_PUBLIC_URL         - R2 public base URL
 
 - **Monorepo tool**: pnpm workspaces
 - **Node.js version**: 24
+
+## Routing (Phase 4)
+
+- `/sign-in`, `/sign-up` — public Neon Auth pages
+- `/dashboard` — script list (protected)
+- `/scripts/new` — editor in create mode (protected)
+- `/scripts/:id` — read-only **detail/playback** page (protected)
+- `/scripts/:id/edit` — editor in edit mode (protected)
+- `*` — public 404
+
+After saving a brand-new script, the editor redirects to `/scripts/:id/edit` so audio can be generated; once `audioUrl` exists, an "Open playback view" link sends the user to `/scripts/:id`.
+
+## Audio pipeline (Phase 3)
+
+`POST /api/generate-audio` accepts `{text, voiceId, scriptId?}`. With a `scriptId`, the server does an ownership check via `getScriptForUser`, generates audio with ElevenLabs, uploads to R2, then calls `attachAudioToScript` to persist `{audioUrl, audioDurationSeconds, voiceId}` and returns the updated script. The client `useGenerateAudio` mutation patches both `["scripts"]` and `["scripts", id]` caches via `setQueryData`.
+
+## Parallel work (in flight on isolated agents)
+
+- Task #6: dashboard rebuild (do not edit `DashboardPage.tsx` from main)
+- Task #13: landing page, favicon, OG tags, footer
+- Task #12, #14: progressive word hiding, mobile polish (proposed)
 - **Package manager**: pnpm
 
 See the `pnpm-workspace` skill for workspace structure details.
