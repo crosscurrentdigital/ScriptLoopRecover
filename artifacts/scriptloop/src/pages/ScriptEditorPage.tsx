@@ -282,8 +282,8 @@ function CreateEditor() {
         <CardHeader>
           <CardTitle className="text-base">Audio</CardTitle>
           <CardDescription>
-            Audio is generated once when you save. In v1 you can't change the
-            voice or regenerate audio for an existing script.
+            Audio is generated when you save. You can swap the voice or
+            regenerate audio later from the script's detail page.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -552,8 +552,14 @@ function EditExistingEditor({ script }: { script: Script }) {
         <CardHeader>
           <CardTitle className="text-base">Audio</CardTitle>
           <CardDescription>
-            Audio is locked at creation in v1. Voice and loop gap can't be
-            changed for an existing script.
+            To swap the voice or regenerate audio, head to the{" "}
+            <Link
+              to={`/scripts/${script.id}`}
+              className="underline underline-offset-2"
+            >
+              script's detail page
+            </Link>
+            . Loop gap can't be changed after creation.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
