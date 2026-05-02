@@ -67,13 +67,7 @@ export function AudioPlayer({
 
   return (
     <div className="space-y-3 rounded-md border p-3">
-      <audio
-        ref={audioRef}
-        src={url}
-        preload="auto"
-        controls
-        className="w-full"
-      />
+      <audio ref={audioRef} src={url} preload="auto" className="sr-only" />
 
       <div className="flex flex-wrap items-center gap-2">
         <Button
