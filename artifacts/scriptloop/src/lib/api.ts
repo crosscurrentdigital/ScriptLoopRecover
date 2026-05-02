@@ -100,6 +100,45 @@ export function useCreateScript() {
   });
 }
 
+export interface CreateScriptWithAudioInput {
+  title: string;
+  content: string;
+  loopGapSeconds?: number;
+  voiceId: string;
+}
+
+/**
+ * Atomic create-and-generate: the server generates audio first and only
+ * inserts the script row after upload succeeds, so a failure here leaves
+ * no row behind and no client-side rollback is needed.
+ */
+export function useCreateScriptWithAudio() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: CreateScriptWithAudioInput) =>
+      http<Script>("/api/scripts/with-audio", {
+        method: "POST",
+        body: JSON.stringify(input),
+      }),
+    onSuccess: (script) => {
+      qc.invalidateQueries({ queryKey: ["scripts"] });
+      qc.setQueryData(["scripts", script.id], script);
+      invalidateQuota(qc);
+    },
+    onError: (err) => {
+      if (
+        err instanceof ApiError &&
+        err.status === 429 &&
+        err.retryAfterSeconds !== undefined
+      ) {
+        markQuotaExhausted(qc, err.retryAfterSeconds);
+      } else {
+        invalidateQuota(qc);
+      }
+    },
+  });
+}
+
 export function useUpdateScript(id: number) {
   const qc = useQueryClient();
   return useMutation({

@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,12 +22,7 @@ import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
 import { useDraft } from "@/hooks/useDraft";
 import {
-  ApiError,
-  deleteScriptRequest,
-  generateAudioRequest,
-  invalidateQuota,
-  markQuotaExhausted,
-  useCreateScript,
+  useCreateScriptWithAudio,
   useScript,
   useUpdateScript,
   useVoices,
@@ -112,7 +106,6 @@ export default function ScriptEditorPage() {
 function CreateEditor() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const queryClient = useQueryClient();
   const {
     data: voices,
     isLoading: voicesLoading,
@@ -120,7 +113,7 @@ function CreateEditor() {
     refetch: refetchVoices,
     isFetching: voicesFetching,
   } = useVoices();
-  const createScript = useCreateScript();
+  const createWithAudio = useCreateScriptWithAudio();
 
   const { draft, setDraft, clearDraft } = useDraft<DraftShape>({
     key: "new",
@@ -128,8 +121,7 @@ function CreateEditor() {
   });
 
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [phase, setPhase] = useState<"idle" | "saving" | "generating">("idle");
+  const isSubmitting = createWithAudio.isPending;
 
   const handleGenerateAndSave = async () => {
     setSubmitError(null);
@@ -155,66 +147,22 @@ function CreateEditor() {
       return;
     }
 
-    setIsSubmitting(true);
-    let createdId: number | undefined;
     try {
-      setPhase("saving");
-      const created = await createScript.mutateAsync({
+      // Single atomic call: server generates audio first and inserts the
+      // row only on success, so a failure here leaves nothing to clean up.
+      const created = await createWithAudio.mutateAsync({
         title: draft.title.trim(),
         content: draft.content,
         loopGapSeconds: draft.loopGapSeconds,
-      });
-      createdId = created.id;
-
-      setPhase("generating");
-      const result = await generateAudioRequest({
-        scriptId: created.id,
-        text: draft.content,
         voiceId: draft.voiceId,
       });
-      queryClient.invalidateQueries({ queryKey: ["scripts"] });
-      if (result.script) {
-        queryClient.setQueryData(["scripts", created.id], result.script);
-      } else {
-        queryClient.invalidateQueries({ queryKey: ["scripts", created.id] });
-      }
-
-      invalidateQuota(queryClient);
       clearDraft();
       toast({ title: "Script created" });
       navigate(`/scripts/${created.id}`);
     } catch (e) {
       const message =
         e instanceof Error ? e.message : "Something went wrong.";
-      if (
-        e instanceof ApiError &&
-        e.status === 429 &&
-        e.retryAfterSeconds !== undefined
-      ) {
-        markQuotaExhausted(queryClient, e.retryAfterSeconds);
-      } else {
-        invalidateQuota(queryClient);
-      }
-      // If audio generation failed after the script row was created, roll
-      // back the half-built script so the user isn't stranded with a row
-      // that has no audio (audio is locked at creation in v1).
-      if (createdId !== undefined) {
-        try {
-          await deleteScriptRequest(createdId);
-          queryClient.invalidateQueries({ queryKey: ["scripts"] });
-          queryClient.removeQueries({ queryKey: ["scripts", createdId] });
-        } catch {
-          // best-effort rollback; surface the original error regardless
-        }
-        setSubmitError(
-          `Audio generation failed: ${message}. Your draft is still here — adjust the script or try a different voice and try again.`,
-        );
-      } else {
-        setSubmitError(message);
-      }
-    } finally {
-      setIsSubmitting(false);
-      setPhase("idle");
+      setSubmitError(message);
     }
   };
 
@@ -377,11 +325,7 @@ function CreateEditor() {
           size="lg"
           className="w-full sm:w-auto"
         >
-          {phase === "saving"
-            ? "Saving…"
-            : phase === "generating"
-              ? "Generating audio…"
-              : "Generate & Save"}
+          {isSubmitting ? "Generating audio…" : "Generate & Save"}
         </Button>
       </div>
     </main>
