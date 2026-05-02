@@ -27,8 +27,9 @@ pnpm workspace monorepo using TypeScript. The primary artifact is ScriptLoop —
 
 - `pnpm --filter @workspace/scriptloop run dev` — dev server (Vite only, no functions)
 - `pnpm --filter @workspace/scriptloop run build` — production build
-- `pnpm --filter @workspace/scriptloop run db:push` — push schema to Neon
-- `pnpm --filter @workspace/scriptloop run db:generate` — generate migration files
+- `pnpm --filter @workspace/scriptloop run db:generate` — generate a new SQL migration from `src/db/schema.ts`
+- `pnpm --filter @workspace/scriptloop run db:migrate` — apply pending migrations to `$DATABASE_URL` (this is what the Netlify build runs)
+- `pnpm --filter @workspace/scriptloop run db:push:dev` — dev-only escape hatch that skips writing a migration file. **Never point this at prod.** See `artifacts/scriptloop/MIGRATIONS.md`.
 
 ## Project Structure
 

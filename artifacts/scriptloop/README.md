@@ -27,10 +27,13 @@ Production memorization tool. Loop your scripts, memorize with audio.
    npm install
    ```
 
-3. Push DB schema to Neon:
+3. Apply DB migrations to your dev Neon branch:
    ```
-   npm run db:push
+   npm run db:migrate
    ```
+   (For throwaway iteration on your own branch only, you can use
+   `npm run db:push:dev` to skip generating a migration file. Never
+   point it at prod — see [`MIGRATIONS.md`](./MIGRATIONS.md).)
 
 4. Run locally with Netlify CLI (recommended — runs functions + Vite together):
    ```
@@ -63,13 +66,25 @@ The repo is already connected. Set all env vars above in Netlify → Site settin
 
 ## Database Migrations
 
+Schema changes are versioned SQL files under [`drizzle/`](./drizzle).
+The Netlify build runs `db:migrate` automatically before the new code
+goes live, so a deploy can never land on an out-of-date database.
+
 ```
-npm run db:push       # push schema directly (dev/staging)
-npm run db:generate   # generate migration files
-npm run db:migrate    # apply migrations
+npm run db:generate   # diff schema.ts -> new SQL file under drizzle/
+npm run db:migrate    # apply pending migrations to $DATABASE_URL
+npm run db:check      # validate the journal/snapshot for drift
+npm run db:push:dev   # dev-only: shortcut that skips writing a migration
 ```
 
-> Note: The `neon_auth` schema (users_sync table) is managed by Neon Auth automatically — do not include it in migrations.
+See [`MIGRATIONS.md`](./MIGRATIONS.md) for the full workflow, the
+expand/contract rule (every migration must keep the previous code
+version working), and the per-environment `DATABASE_URL` setup.
+
+> Note: The `neon_auth` schema is managed by Neon Auth automatically —
+> the baseline migration declares its `user` table with `IF NOT EXISTS`
+> only so the FK from `scripts.user_id` resolves on a fresh database.
+> Do not add migrations that alter `neon_auth.user`.
 
 ## Production Hardening (Phase 8)
 

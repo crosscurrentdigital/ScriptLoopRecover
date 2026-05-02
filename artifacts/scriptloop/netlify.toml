@@ -1,5 +1,10 @@
 [build]
-  command = "npm run build"
+  # Apply pending DB migrations against the deploy-target $DATABASE_URL
+  # BEFORE building. If migrations fail, the build (and therefore the
+  # deploy) fails, so we never ship code that expects a column the
+  # database doesn't have. Only this site has a build step on Netlify, so
+  # `npm run` resolves to `artifacts/scriptloop/package.json`.
+  command = "npm run db:migrate && npm run build"
   publish = "dist/public"
   functions = "netlify/functions"
 
