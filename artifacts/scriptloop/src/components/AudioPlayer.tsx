@@ -5,12 +5,18 @@ export interface AudioPlayerProps {
   src: string;
   gapSeconds: number;
   onLoopComplete?: () => void;
+  defaultLooping?: boolean;
 }
 
-export function AudioPlayer({ src, gapSeconds, onLoopComplete }: AudioPlayerProps) {
+export function AudioPlayer({
+  src,
+  gapSeconds,
+  onLoopComplete,
+  defaultLooping = false,
+}: AudioPlayerProps) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const timer = useRef<number | undefined>(undefined);
-  const [isLooping, setIsLooping] = useState(false);
+  const [isLooping, setIsLooping] = useState(defaultLooping);
   const isLoopingRef = useRef(isLooping);
   const onLoopCompleteRef = useRef(onLoopComplete);
 
@@ -25,6 +31,19 @@ export function AudioPlayer({ src, gapSeconds, onLoopComplete }: AudioPlayerProp
       timer.current = undefined;
     }
   }, [isLooping]);
+
+  useEffect(() => {
+    setIsLooping(defaultLooping);
+  }, [defaultLooping, src]);
+
+  useEffect(() => {
+    if (!defaultLooping) return;
+    const audio = audioRef.current;
+    if (!audio) return;
+    audio.play().catch(() => {
+      /* autoplay may be blocked by the browser */
+    });
+  }, [defaultLooping, src]);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -60,7 +79,7 @@ export function AudioPlayer({ src, gapSeconds, onLoopComplete }: AudioPlayerProp
         src={src}
         controls
         className="w-full"
-        preload="metadata"
+        preload="auto"
       />
       <div className="flex items-center gap-2">
         <Button

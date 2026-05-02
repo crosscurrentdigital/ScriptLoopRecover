@@ -74,11 +74,14 @@ export function useUpdateScript(id: number) {
   });
 }
 
+export function deleteScriptRequest(id: number) {
+  return http<void>(`/api/scripts/${id}`, { method: "DELETE" });
+}
+
 export function useDeleteScript() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: number) =>
-      http<void>(`/api/scripts/${id}`, { method: "DELETE" }),
+    mutationFn: (id: number) => deleteScriptRequest(id),
     onMutate: async (id: number) => {
       await qc.cancelQueries({ queryKey: ["scripts"] });
       const previous = qc.getQueryData<Script[]>(["scripts"]);
@@ -95,8 +98,9 @@ export function useDeleteScript() {
         qc.setQueryData(["scripts"], context.previous);
       }
     },
-    onSettled: () => {
+    onSettled: (_data, _err, id) => {
       qc.invalidateQueries({ queryKey: ["scripts"] });
+      qc.removeQueries({ queryKey: ["scripts", id] });
     },
   });
 }
@@ -120,17 +124,29 @@ export interface GenerateAudioResponse {
   script: Script | null;
 }
 
+export function generateAudioRequest(input: {
+  scriptId: number;
+  text: string;
+  voiceId: string;
+}) {
+  return http<GenerateAudioResponse>("/api/generate-audio", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
 export function useGenerateAudio(scriptId: number) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ text, voiceId }: GenerateAudioInput) =>
-      http<GenerateAudioResponse>("/api/generate-audio", {
-        method: "POST",
-        body: JSON.stringify({ text, voiceId, scriptId }),
-      }),
+      generateAudioRequest({ scriptId, text, voiceId }),
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ["scripts"] });
-      if (data.script) qc.setQueryData(["scripts", scriptId], data.script);
+      if (data.script) {
+        qc.setQueryData(["scripts", scriptId], data.script);
+      } else {
+        qc.invalidateQueries({ queryKey: ["scripts", scriptId] });
+      }
     },
   });
 }

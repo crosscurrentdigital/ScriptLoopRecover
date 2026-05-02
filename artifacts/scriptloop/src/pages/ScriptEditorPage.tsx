@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { AudioPlayer } from "@/components/AudioPlayer";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,8 +23,9 @@ import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
 import { useDraft } from "@/hooks/useDraft";
 import {
+  deleteScriptRequest,
+  generateAudioRequest,
   useCreateScript,
-  useGenerateAudio,
   useScript,
   useUpdateScript,
   useVoices,
@@ -50,225 +51,220 @@ export default function ScriptEditorPage() {
   const isNew = !params.id;
   const scriptId = params.id ? Number(params.id) : undefined;
 
-  const { data: script, isLoading } = useScript(scriptId);
+  const { data: script, isLoading, error, refetch, isFetching } =
+    useScript(scriptId);
 
   if (isNew) {
-    return <EditorBody mode="create" initial={DEFAULT_DRAFT} />;
+    return <CreateEditor />;
   }
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-sm text-muted-foreground">
-        Loading…
-      </div>
+      <main className="container mx-auto max-w-3xl px-4 py-10 text-sm text-muted-foreground">
+        Loading script…
+      </main>
     );
   }
 
-  if (!script) {
+  if (error || !script) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-3">
-        <p className="text-sm text-muted-foreground">Script not found.</p>
-        <Button asChild variant="outline">
-          <Link to="/dashboard">Back to dashboard</Link>
-        </Button>
-      </div>
+      <main className="container mx-auto max-w-3xl px-4 py-10">
+        <Card className="border-destructive">
+          <CardHeader>
+            <CardTitle className="text-base">
+              {error ? "Couldn't load script" : "Script not found"}
+            </CardTitle>
+            {error && (
+              <CardDescription className="text-destructive">
+                {error.message}
+              </CardDescription>
+            )}
+          </CardHeader>
+          <CardContent className="flex flex-wrap gap-2">
+            {error && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => refetch()}
+                disabled={isFetching}
+              >
+                {isFetching ? "Retrying…" : "Try again"}
+              </Button>
+            )}
+            <Button asChild variant="ghost" size="sm">
+              <Link to="/dashboard">Back to dashboard</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      </main>
     );
   }
 
-  return (
-    <EditorBody
-      mode="edit"
-      script={script}
-      initial={{
-        title: script.title,
-        content: script.content,
-        loopGapSeconds: script.loopGapSeconds ?? 2,
-        voiceId: script.voiceId ?? "",
-      }}
-    />
-  );
+  return <EditExistingEditor script={script} />;
 }
 
-interface EditorBodyProps {
-  mode: "create" | "edit";
-  script?: Script;
-  initial: DraftShape;
-}
-
-function EditorBody({ mode, script, initial }: EditorBodyProps) {
+function CreateEditor() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const isNew = mode === "create";
-  const scriptId = script?.id;
-
-  const { data: voices, isLoading: voicesLoading } = useVoices();
+  const queryClient = useQueryClient();
+  const {
+    data: voices,
+    isLoading: voicesLoading,
+    error: voicesError,
+    refetch: refetchVoices,
+    isFetching: voicesFetching,
+  } = useVoices();
   const createScript = useCreateScript();
-  const updateScript = useUpdateScript(scriptId ?? 0);
-  const generateAudio = useGenerateAudio(scriptId ?? 0);
 
-  const draftKey = isNew ? "new" : `script-${scriptId}`;
-  const { draft, setDraft, clearDraft, hasSavedDraft } = useDraft<DraftShape>({
-    key: draftKey,
-    initial,
+  const { draft, setDraft, clearDraft } = useDraft<DraftShape>({
+    key: "new",
+    initial: DEFAULT_DRAFT,
   });
 
-  const [showRestoreNotice, setShowRestoreNotice] = useState(false);
-  const noticeChecked = useRef(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [phase, setPhase] = useState<"idle" | "saving" | "generating">("idle");
 
-  useEffect(() => {
-    if (noticeChecked.current) return;
-    noticeChecked.current = true;
-    if (!script) return;
-    const saved = hasSavedDraft();
-    const differs =
-      saved &&
-      (draft.title !== script.title || draft.content !== script.content);
-    if (differs) setShowRestoreNotice(true);
-  }, [script, draft, hasSavedDraft]);
+  const handleGenerateAndSave = async () => {
+    setSubmitError(null);
 
-  const discardDraft = () => {
-    clearDraft();
-    setShowRestoreNotice(false);
-  };
-
-  const handleSave = async () => {
     if (!draft.title.trim()) {
       toast({ title: "Title is required", variant: "destructive" });
-      return;
-    }
-    try {
-      if (isNew) {
-        const created = await createScript.mutateAsync({
-          title: draft.title,
-          content: draft.content,
-          loopGapSeconds: draft.loopGapSeconds,
-        });
-        clearDraft();
-        toast({ title: "Script created" });
-        navigate(`/scripts/${created.id}/edit`);
-      } else if (scriptId) {
-        await updateScript.mutateAsync({
-          title: draft.title,
-          content: draft.content,
-          loopGapSeconds: draft.loopGapSeconds,
-        });
-        clearDraft();
-        toast({ title: "Saved" });
-      }
-    } catch (e) {
-      toast({
-        title: "Save failed",
-        description: e instanceof Error ? e.message : undefined,
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleGenerate = async () => {
-    if (!scriptId) {
-      toast({ title: "Save the script first", variant: "destructive" });
-      return;
-    }
-    if (!draft.voiceId) {
-      toast({ title: "Pick a voice first", variant: "destructive" });
       return;
     }
     if (!draft.content.trim()) {
       toast({ title: "Script content is empty", variant: "destructive" });
       return;
     }
+    if (!draft.voiceId) {
+      toast({ title: "Pick a voice first", variant: "destructive" });
+      return;
+    }
+
+    setIsSubmitting(true);
+    let createdId: number | undefined;
     try {
-      await generateAudio.mutateAsync({
+      setPhase("saving");
+      const created = await createScript.mutateAsync({
+        title: draft.title.trim(),
+        content: draft.content,
+        loopGapSeconds: draft.loopGapSeconds,
+      });
+      createdId = created.id;
+
+      setPhase("generating");
+      const result = await generateAudioRequest({
+        scriptId: created.id,
         text: draft.content,
         voiceId: draft.voiceId,
       });
-      toast({ title: "Audio generated" });
+      queryClient.invalidateQueries({ queryKey: ["scripts"] });
+      if (result.script) {
+        queryClient.setQueryData(["scripts", created.id], result.script);
+      } else {
+        queryClient.invalidateQueries({ queryKey: ["scripts", created.id] });
+      }
+
+      clearDraft();
+      toast({ title: "Script created" });
+      navigate(`/scripts/${created.id}`);
     } catch (e) {
-      toast({
-        title: "Generation failed",
-        description: e instanceof Error ? e.message : undefined,
-        variant: "destructive",
-      });
+      const message =
+        e instanceof Error ? e.message : "Something went wrong.";
+      // If audio generation failed after the script row was created, roll
+      // back the half-built script so the user isn't stranded with a row
+      // that has no audio (audio is locked at creation in v1).
+      if (createdId !== undefined) {
+        try {
+          await deleteScriptRequest(createdId);
+          queryClient.invalidateQueries({ queryKey: ["scripts"] });
+          queryClient.removeQueries({ queryKey: ["scripts", createdId] });
+        } catch {
+          // best-effort rollback; surface the original error regardless
+        }
+        setSubmitError(
+          `Audio generation failed: ${message}. Your draft is still here — adjust the script or try a different voice and try again.`,
+        );
+      } else {
+        setSubmitError(message);
+      }
+    } finally {
+      setIsSubmitting(false);
+      setPhase("idle");
     }
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b">
-        <div className="container mx-auto flex items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="sm" asChild>
-              <Link to="/dashboard">← Back</Link>
-            </Button>
-            <h1 className="text-lg font-semibold">
-              {isNew ? "New script" : "Edit script"}
-            </h1>
-          </div>
-          <Button
-            onClick={handleSave}
-            disabled={createScript.isPending || updateScript.isPending}
-          >
-            {createScript.isPending || updateScript.isPending
-              ? "Saving…"
-              : "Save"}
-          </Button>
-        </div>
-      </header>
+    <main className="container mx-auto max-w-3xl px-4 py-6 space-y-6">
+      <div className="flex items-center justify-between gap-3">
+        <h1 className="text-2xl font-bold tracking-tight">New script</h1>
+        <Button asChild variant="ghost" size="sm">
+          <Link to="/dashboard">Cancel</Link>
+        </Button>
+      </div>
 
-      <main className="container mx-auto max-w-3xl px-4 py-6 space-y-6">
-        {showRestoreNotice && (
-          <Card className="border-amber-500/50 bg-amber-50 dark:bg-amber-950/20">
-            <CardContent className="pt-4 flex items-center justify-between gap-4">
-              <p className="text-sm">
-                Restored an unsaved draft from this device.
-              </p>
-              <Button size="sm" variant="outline" onClick={discardDraft}>
-                Discard draft
-              </Button>
-            </CardContent>
-          </Card>
-        )}
+      <div className="space-y-2">
+        <Label htmlFor="title">Title</Label>
+        <Input
+          id="title"
+          value={draft.title}
+          onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))}
+          placeholder="My monologue"
+          disabled={isSubmitting}
+        />
+      </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="title">Title</Label>
-          <Input
-            id="title"
-            value={draft.title}
-            onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))}
-            placeholder="My monologue"
-          />
-        </div>
+      <div className="space-y-2">
+        <Label htmlFor="content">Script</Label>
+        <Textarea
+          id="content"
+          value={draft.content}
+          onChange={(e) =>
+            setDraft((d) => ({ ...d, content: e.target.value }))
+          }
+          placeholder="Paste your script here…"
+          className="min-h-[300px] font-mono text-sm"
+          disabled={isSubmitting}
+        />
+        <p className="text-xs text-muted-foreground">
+          {draft.content.length} characters · drafts auto-save to this device
+        </p>
+      </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="content">Script</Label>
-          <Textarea
-            id="content"
-            value={draft.content}
-            onChange={(e) => setDraft((d) => ({ ...d, content: e.target.value }))}
-            placeholder="Paste your script here…"
-            className="min-h-[300px] font-mono text-sm"
-          />
-          <p className="text-xs text-muted-foreground">
-            {draft.content.length} characters · drafts auto-save to this device
-          </p>
-        </div>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Audio</CardTitle>
-            <CardDescription>
-              Generate speech with ElevenLabs and loop it to memorize.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label>Voice</Label>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Audio</CardTitle>
+          <CardDescription>
+            Audio is generated once when you save. In v1 you can't change the
+            voice or regenerate audio for an existing script.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label>Voice</Label>
+            {voicesError ? (
+              <div className="rounded-md border border-destructive/50 bg-destructive/5 p-3 text-sm">
+                <p className="text-destructive">
+                  Couldn't load voices: {voicesError.message}
+                </p>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="mt-2"
+                  onClick={() => refetchVoices()}
+                  disabled={voicesFetching}
+                >
+                  {voicesFetching ? "Retrying…" : "Try again"}
+                </Button>
+              </div>
+            ) : (
               <Select
                 value={draft.voiceId}
                 onValueChange={(value) =>
                   setDraft((d) => ({ ...d, voiceId: value }))
                 }
-                disabled={voicesLoading}
+                disabled={voicesLoading || isSubmitting}
               >
                 <SelectTrigger>
                   <SelectValue
@@ -285,54 +281,227 @@ function EditorBody({ mode, script, initial }: EditorBodyProps) {
                   ))}
                 </SelectContent>
               </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Loop gap: {draft.loopGapSeconds}s</Label>
-              <Slider
-                value={[draft.loopGapSeconds]}
-                min={0}
-                max={10}
-                step={1}
-                onValueChange={(value) =>
-                  setDraft((d) => ({ ...d, loopGapSeconds: value[0] ?? 2 }))
-                }
-              />
-              <p className="text-xs text-muted-foreground">
-                Pause between each replay.
-              </p>
-            </div>
-
-            <Button
-              onClick={handleGenerate}
-              disabled={generateAudio.isPending || isNew}
-              variant="secondary"
-            >
-              {generateAudio.isPending
-                ? "Generating audio…"
-                : script?.audioUrl
-                  ? "Regenerate audio"
-                  : "Generate audio"}
-            </Button>
-            {isNew && (
-              <p className="text-xs text-muted-foreground">
-                Save the script before generating audio.
-              </p>
             )}
+          </div>
 
-            {script?.audioUrl && (
-              <div className="space-y-2">
-                <AudioPlayer src={script.audioUrl} gapSeconds={draft.loopGapSeconds} />
-                <div className="text-right">
-                  <Button asChild variant="link" size="sm">
-                    <Link to={`/scripts/${script.id}`}>Open playback view →</Link>
-                  </Button>
-                </div>
-              </div>
-            )}
+          <div className="space-y-2">
+            <Label>Loop gap: {draft.loopGapSeconds}s</Label>
+            <Slider
+              value={[draft.loopGapSeconds]}
+              min={0}
+              max={10}
+              step={1}
+              onValueChange={(value) =>
+                setDraft((d) => ({ ...d, loopGapSeconds: value[0] ?? 2 }))
+              }
+              disabled={isSubmitting}
+            />
+            <p className="text-xs text-muted-foreground">
+              Pause between each replay.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
+      {submitError && (
+        <Card className="border-destructive">
+          <CardContent className="pt-6">
+            <p className="text-sm text-destructive">{submitError}</p>
           </CardContent>
         </Card>
-      </main>
-    </div>
+      )}
+
+      <div className="flex items-center justify-end gap-2">
+        <Button
+          onClick={handleGenerateAndSave}
+          disabled={isSubmitting}
+          size="lg"
+        >
+          {phase === "saving"
+            ? "Saving…"
+            : phase === "generating"
+              ? "Generating audio…"
+              : "Generate & Save"}
+        </Button>
+      </div>
+    </main>
+  );
+}
+
+function EditExistingEditor({ script }: { script: Script }) {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const updateScript = useUpdateScript(script.id);
+  const { data: voices } = useVoices();
+
+  const initial: DraftShape = {
+    title: script.title,
+    content: script.content,
+    loopGapSeconds: script.loopGapSeconds ?? 2,
+    voiceId: script.voiceId ?? "",
+  };
+
+  const { draft, setDraft, clearDraft, hasSavedDraft } = useDraft<DraftShape>({
+    key: `script-${script.id}`,
+    initial,
+  });
+
+  const [showRestoreNotice, setShowRestoreNotice] = useState(false);
+  const noticeChecked = useRef(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (noticeChecked.current) return;
+    noticeChecked.current = true;
+    const saved = hasSavedDraft();
+    const differs =
+      saved &&
+      (draft.title !== script.title || draft.content !== script.content);
+    if (differs) setShowRestoreNotice(true);
+  }, [script, draft, hasSavedDraft]);
+
+  const discardDraft = () => {
+    clearDraft();
+    setShowRestoreNotice(false);
+  };
+
+  const handleSave = async () => {
+    setSubmitError(null);
+    if (!draft.title.trim()) {
+      toast({ title: "Title is required", variant: "destructive" });
+      return;
+    }
+    try {
+      await updateScript.mutateAsync({
+        title: draft.title.trim(),
+        content: draft.content,
+      });
+      clearDraft();
+      toast({ title: "Saved" });
+      navigate(`/scripts/${script.id}`);
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "Save failed";
+      setSubmitError(message);
+    }
+  };
+
+  const voiceName =
+    voices?.find((v) => v.voice_id === script.voiceId)?.name ??
+    script.voiceId ??
+    "—";
+
+  return (
+    <main className="container mx-auto max-w-3xl px-4 py-6 space-y-6">
+      <div className="flex items-center justify-between gap-3">
+        <h1 className="text-2xl font-bold tracking-tight">Edit script</h1>
+        <div className="flex items-center gap-2">
+          <Button asChild variant="ghost" size="sm">
+            <Link to={`/scripts/${script.id}`}>Cancel</Link>
+          </Button>
+          <Button onClick={handleSave} disabled={updateScript.isPending}>
+            {updateScript.isPending ? "Saving…" : "Save"}
+          </Button>
+        </div>
+      </div>
+
+      {showRestoreNotice && (
+        <Card className="border-amber-500/50 bg-amber-50 dark:bg-amber-950/20">
+          <CardContent className="pt-4 flex items-center justify-between gap-4">
+            <p className="text-sm">
+              Restored an unsaved draft from this device.
+            </p>
+            <Button size="sm" variant="outline" onClick={discardDraft}>
+              Discard draft
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      <div className="space-y-2">
+        <Label htmlFor="title">Title</Label>
+        <Input
+          id="title"
+          value={draft.title}
+          onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))}
+          placeholder="My monologue"
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="content">Script</Label>
+        <Textarea
+          id="content"
+          value={draft.content}
+          onChange={(e) => setDraft((d) => ({ ...d, content: e.target.value }))}
+          placeholder="Paste your script here…"
+          className="min-h-[300px] font-mono text-sm"
+        />
+        <p className="text-xs text-muted-foreground">
+          {draft.content.length} characters · drafts auto-save to this device
+        </p>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Audio</CardTitle>
+          <CardDescription>
+            Audio is locked at creation in v1. Voice and loop gap can't be
+            changed for an existing script.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
+            <dt className="text-muted-foreground">Voice</dt>
+            <dd>{voiceName}</dd>
+            <dt className="text-muted-foreground">Loop gap</dt>
+            <dd>{script.loopGapSeconds ?? 2}s</dd>
+            <dt className="text-muted-foreground">Audio</dt>
+            <dd>
+              {script.audioUrl ? (
+                <span className="text-emerald-600 dark:text-emerald-400">
+                  Ready
+                </span>
+              ) : (
+                <span className="text-muted-foreground">None</span>
+              )}
+            </dd>
+          </dl>
+          {script.audioUrl && (
+            <div className="space-y-2">
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">
+                  Audio URL (read-only)
+                </Label>
+                <Input
+                  value={script.audioUrl}
+                  readOnly
+                  onFocus={(e) => e.currentTarget.select()}
+                  className="font-mono text-xs"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">
+                  Audio preview (read-only)
+                </Label>
+                <audio
+                  src={script.audioUrl}
+                  controls
+                  preload="metadata"
+                  className="w-full"
+                />
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {submitError && (
+        <Card className="border-destructive">
+          <CardContent className="pt-6">
+            <p className="text-sm text-destructive">{submitError}</p>
+          </CardContent>
+        </Card>
+      )}
+    </main>
   );
 }

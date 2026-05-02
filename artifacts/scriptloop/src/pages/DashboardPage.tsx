@@ -1,7 +1,6 @@
 import { Link } from "react-router-dom";
 import { useState } from "react";
 import { Plus } from "lucide-react";
-import { authClient } from "@/lib/auth-client";
 import { useScripts, useDeleteScript } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -43,17 +42,10 @@ function GridSkeleton() {
 }
 
 export default function DashboardPage() {
-  const session = authClient.useSession();
-  const user = session.data?.user;
-  const { data: scripts, isLoading, error } = useScripts();
+  const { data: scripts, isLoading, error, refetch, isFetching } = useScripts();
   const deleteScript = useDeleteScript();
   const { toast } = useToast();
   const [deletingId, setDeletingId] = useState<number | null>(null);
-
-  const handleSignOut = async () => {
-    await authClient.signOut();
-    window.location.href = "/sign-in";
-  };
 
   const handleDelete = async (id: number, title: string) => {
     setDeletingId(id);
@@ -75,61 +67,53 @@ export default function DashboardPage() {
   const scriptCount = scripts?.length ?? 0;
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b">
-        <div className="container mx-auto flex items-center justify-between gap-3 px-4 py-3">
-          <h1 className="text-xl font-semibold">ScriptLoop</h1>
-          <div className="flex items-center gap-3">
-            <span className="hidden text-sm text-muted-foreground sm:inline">
-              {user?.email}
-            </span>
-            <Button variant="outline" size="sm" onClick={handleSignOut}>
-              Sign out
-            </Button>
-          </div>
+    <main className="container mx-auto px-4 py-8">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="text-2xl font-bold">Your scripts</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {isLoading
+              ? "Loading…"
+              : scriptCount > 0
+                ? `${scriptCount} script${scriptCount === 1 ? "" : "s"}`
+                : "Add a script to start memorizing"}
+          </p>
         </div>
-      </header>
+        <Button asChild size="lg">
+          <Link to="/scripts/new">
+            <Plus className="h-4 w-4" />
+            New script
+          </Link>
+        </Button>
+      </div>
 
-      <main className="container mx-auto px-4 py-8">
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h2 className="text-2xl font-bold">Your scripts</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {isLoading
-                ? "Loading…"
-                : scriptCount > 0
-                  ? `${scriptCount} script${scriptCount === 1 ? "" : "s"}`
-                  : "Add a script to start memorizing"}
+      {isLoading && <GridSkeleton />}
+
+      {error && (
+        <Card className="border-destructive">
+          <CardContent className="pt-6 flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm text-destructive">
+              Failed to load scripts: {error.message}
             </p>
-          </div>
-          <Button asChild size="lg">
-            <Link to="/scripts/new">
-              <Plus className="h-4 w-4" />
-              New script
-            </Link>
-          </Button>
-        </div>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => refetch()}
+              disabled={isFetching}
+            >
+              {isFetching ? "Retrying…" : "Try again"}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
-        {isLoading && <GridSkeleton />}
-
-        {error && (
-          <Card className="border-destructive">
-            <CardContent className="pt-6">
-              <p className="text-sm text-destructive">
-                Failed to load scripts: {error.message}
-              </p>
-            </CardContent>
-          </Card>
-        )}
-
-        {!isLoading && !error && scripts && (
-          <ScriptList
-            scripts={scripts}
-            onDelete={handleDelete}
-            deletingId={deletingId}
-          />
-        )}
-      </main>
-    </div>
+      {!isLoading && !error && scripts && (
+        <ScriptList
+          scripts={scripts}
+          onDelete={handleDelete}
+          deletingId={deletingId}
+        />
+      )}
+    </main>
   );
 }

@@ -9,6 +9,8 @@ import DashboardPage from "@/pages/DashboardPage";
 import ScriptEditorPage from "@/pages/ScriptEditorPage";
 import ScriptDetailPage from "@/pages/ScriptDetailPage";
 import NotFoundPage from "@/pages/NotFoundPage";
+import { AppHeader } from "@/components/AppHeader";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 const queryClient = new QueryClient();
 
@@ -25,7 +27,14 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   if (session.isPending) return <Spinner />;
   if (!session.data) return <Navigate to="/sign-in" replace />;
-  return <>{children}</>;
+  return (
+    <ErrorBoundary>
+      <div className="min-h-screen bg-background flex flex-col">
+        <AppHeader />
+        <div className="flex-1">{children}</div>
+      </div>
+    </ErrorBoundary>
+  );
 }
 
 function PublicRoute({ children }: { children: React.ReactNode }) {
