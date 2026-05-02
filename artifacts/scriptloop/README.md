@@ -104,6 +104,26 @@ To **manually reset** a user's hourly window during testing:
 DELETE FROM rate_limits WHERE user_id = '<user-id>';
 ```
 
+#### Automatic cleanup of old `rate_limits` rows
+
+Because `rate_limits` inserts one row per `(user, route, hour)` bucket, the
+table would otherwise grow forever. A scheduled Netlify function purges old
+rows so the table stays small and the per-request `ON CONFLICT` upsert stays
+fast.
+
+- **Function**: `netlify/functions/cleanup-rate-limits.ts`
+- **Schedule**: `@daily` (runs once every 24h via Netlify Scheduled Functions)
+- **What it does**: `DELETE FROM rate_limits WHERE window_start < now() - interval '7 days'`
+- **Idempotent**: safe to run any number of times — re-runs simply find no
+  rows to delete.
+- **Logged**: each run logs `[cleanup-rate-limits] deleted N rate_limits row(s) with window_start < <ISO cutoff>` to the function log, and any failure is reported to Sentry via `withSentry` / `captureFunctionError`.
+
+You can also invoke it manually for an ad-hoc purge:
+
+```
+curl -X POST https://<your-site>/.netlify/functions/cleanup-rate-limits
+```
+
 ### Character limits (defense in depth)
 
 Scripts are capped at **2,000 characters** at three layers:
@@ -205,4 +225,5 @@ netlify/
     generate-audio.ts   - ElevenLabs + R2 + DB attach (rate-limited)
     audio.ts            - /api/audio/voices, /api/audio/generate guard
     storage.ts          - R2 presign (/api/storage/presign)
+    cleanup-rate-limits.ts - Scheduled (@daily) purge of rate_limits rows older than 7 days
 ```
