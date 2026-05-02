@@ -223,7 +223,7 @@ function CreateEditor() {
             setDraft((d) => ({ ...d, content: e.target.value }))
           }
           placeholder="Paste your script here…"
-          className="min-h-[300px] font-mono text-sm"
+          className="min-h-[300px] font-mono text-base sm:text-sm"
           disabled={isSubmitting}
         />
         <p className="text-xs text-muted-foreground">
@@ -435,7 +435,7 @@ function EditExistingEditor({ script }: { script: Script }) {
           value={draft.content}
           onChange={(e) => setDraft((d) => ({ ...d, content: e.target.value }))}
           placeholder="Paste your script here…"
-          className="min-h-[300px] font-mono text-sm"
+          className="min-h-[300px] font-mono text-base sm:text-sm"
         />
         <p className="text-xs text-muted-foreground">
           {draft.content.length} characters · drafts auto-save to this device
@@ -477,7 +477,7 @@ function EditExistingEditor({ script }: { script: Script }) {
                   value={script.audioUrl}
                   readOnly
                   onFocus={(e) => e.currentTarget.select()}
-                  className="font-mono text-xs"
+                  className="font-mono text-base sm:text-xs"
                 />
               </div>
               <div className="space-y-1">
