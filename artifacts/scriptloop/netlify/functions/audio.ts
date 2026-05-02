@@ -28,7 +28,7 @@ const handler = async (req: Request): Promise<Response> => {
         route: GENERATE_AUDIO_ROUTE,
       });
       return jsonResponse({
-        used: status.used,
+        used: Math.min(status.used, status.limit),
         limit: status.limit,
         resetsAt: status.resetsAt.toISOString(),
       });
