@@ -1,0 +1,99 @@
+PROJECT: ScriptLoop — production memorization tool
+
+CRITICAL CONSTRAINTS (read first, follow always):
+- This is for production deployment, not a demo. Code quality matters.
+- Use ONLY third-party services: Neon (database), Better Auth (auth), Netlify (hosting), Cloudflare R2 (file storage), ElevenLabs (audio).
+- NEVER use Replit's database, Replit's auth, Replit Secrets, Replit's hosting, or any Replit-specific feature. If tempted, stop and tell me — we use the third-party equivalent every time.
+- All code must work identically on a local laptop (Cursor) and Netlify. No Replit-specific paths, configs, or environment assumptions.
+- All /src code must run in a browser context — no Node.js APIs, filesystem access, or browser-incompatible imports. The app must be Capacitor-ready for future mobile wrapping.
+- Stop and confirm at the END OF THIS PHASE before proceeding to features. Within the phase, work autonomously.
+
+STACK:
+- Vite + React 18 + TypeScript
+- Tailwind CSS + shadcn/ui (button, input, textarea, card, dialog, toast)
+- React Router v6
+- TanStack Query
+- Drizzle ORM + drizzle-kit
+- Better Auth (FETCH CURRENT DOCS from better-auth.com — do not rely on training data)
+- @neondatabase/serverless
+- @aws-sdk/client-s3, @aws-sdk/s3-request-presigner
+
+PROJECT STRUCTURE:
+/src
+  /auth          - Better Auth config (client + server)
+  /db            - Drizzle schema + Neon connection
+  /components    - UI components (shadcn/ui based)
+  /hooks
+  /pages
+  /lib           - ElevenLabs client, R2 client, utilities
+  App.tsx
+  main.tsx
+/netlify/functions
+.env.template
+.gitignore (must ignore .env, node_modules, dist, .netlify)
+drizzle.config.ts
+netlify.toml
+vite.config.ts
+package.json
+README.md
+
+DATABASE SCHEMA (initial — /src/db/schema.ts):
+import { pgTable, text, serial, timestamp, integer } from 'drizzle-orm/pg-core';
+
+export const scripts = pgTable('scripts', {
+  id: serial('id').primaryKey(),
+  userId: text('user_id').notNull(),
+  title: text('title').notNull(),
+  content: text('content').notNull(),
+  audioUrl: text('audio_url'),
+  audioSource: text('audio_source'),
+  voiceId: text('voice_id'),
+  loopGapSeconds: integer('loop_gap_seconds').default(2),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
+NETLIFY CONFIG (netlify.toml):
+[build]
+  command = "npm run build"
+  publish = "dist"
+  functions = "netlify/functions"
+[functions]
+  node_bundler = "esbuild"
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+
+ENV TEMPLATE (.env.template — no real values, I add them manually):
+DATABASE_URL=
+BETTER_AUTH_SECRET=
+BETTER_AUTH_URL=
+ELEVENLABS_API_KEY=
+R2_ACCOUNT_ID=
+R2_ACCESS_KEY_ID=
+R2_SECRET_ACCESS_KEY=
+R2_BUCKET_NAME=
+R2_PUBLIC_URL=
+
+PHASE 1 GOALS (in order):
+1. Initialize Vite + React + TS
+2. Install Tailwind + shadcn/ui (button, input, textarea, card, dialog, toast)
+3. Install all dependencies
+4. Configure drizzle.config.ts for Neon
+5. Create /src/db/schema.ts with the schema above
+6. Set up Better Auth with Drizzle adapter — fetch current docs first
+7. Create initial Netlify Functions for auth callbacks
+8. Create .env.template (no real values)
+9. Configure .gitignore
+10. Initialize git, commit, push to GitHub repo "scriptloop"
+
+PHASE 1 COMPLETE WHEN:
+- npm run dev works locally
+- Live Netlify deployment loads at temporary URL
+- Better Auth sign-up + sign-in works end-to-end on the live deployment
+- Drizzle migration ran successfully on Neon
+
+Stop and report when Phase 1 is complete. Do not proceed to features until I confirm.
+
+Begin.
