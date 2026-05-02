@@ -91,6 +91,24 @@ secret:
 A staging Neon branch is not provisioned today; when it is, it slots
 into this table the same way as production.
 
+### Netlify deploy contexts
+
+Because `db:migrate` now runs as part of every Netlify build, **every
+deploy context that runs the build also mutates whatever DB its
+`DATABASE_URL` points at.** Configure Netlify accordingly:
+
+- **Production** (`main` branch): set `DATABASE_URL` to the prod Neon
+  branch in Netlify → Site settings → Environment variables, scoped to
+  the **Production** context only.
+- **Deploy previews / branch deploys**: either disable the build for
+  those contexts or scope a separate `DATABASE_URL` (a throwaway Neon
+  branch) to the **Deploy previews** / **Branch deploys** contexts.
+  Never let a preview build inherit the production `DATABASE_URL` —
+  it would silently apply pending migrations against prod.
+
+When in doubt, prefer disabling preview builds until a dedicated
+preview DB is provisioned.
+
 ## The `neon_auth.user` table
 
 The `neon_auth` schema and its `user` table are managed by Neon Auth,
