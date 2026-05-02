@@ -20,7 +20,7 @@ export function AppHeader() {
       <div className="container mx-auto flex items-center justify-between gap-3 px-4 py-3">
         <Link
           to="/dashboard"
-          className="text-xl font-semibold tracking-tight hover:opacity-80"
+          className="inline-flex min-h-11 items-center text-xl font-semibold tracking-tight active:opacity-80 sm:min-h-0 sm:hover:opacity-80"
         >
           ScriptLoop
         </Link>

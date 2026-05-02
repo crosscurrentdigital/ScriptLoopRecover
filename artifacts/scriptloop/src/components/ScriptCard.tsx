@@ -75,7 +75,7 @@ export function ScriptCard({
       aria-label={`Open ${script.title}`}
       onClick={goToScript}
       onKeyDown={handleKeyDown}
-      className="flex flex-col cursor-pointer transition-shadow hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 hover:border-primary/40"
+      className="flex flex-col cursor-pointer transition-shadow active:shadow-md active:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:hover:shadow-md sm:hover:border-primary/40"
     >
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-2">

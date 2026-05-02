@@ -494,7 +494,7 @@ function EditExistingEditor({ script }: { script: Script }) {
               <div className="pt-1">
                 <Link
                   to={`/scripts/${script.id}/zen`}
-                  className="text-xs text-primary underline-offset-2 hover:underline"
+                  className="inline-flex min-h-11 items-center text-sm text-primary underline underline-offset-2 sm:min-h-0 sm:text-xs sm:no-underline sm:hover:underline"
                 >
                   Enter Zen Mode →
                 </Link>
