@@ -8,7 +8,7 @@ let initialized = false;
  * URLs into Sentry events would be equivalent to leaking the audio itself,
  * so we redact anything that looks like our R2 public base before send.
  */
-function buildAudioUrlScrubber(): ((value: string) => string) | null {
+export function buildAudioUrlScrubber(): ((value: string) => string) | null {
   const base = process.env.R2_PUBLIC_URL;
   if (!base) return null;
   let host: string;
@@ -23,7 +23,7 @@ function buildAudioUrlScrubber(): ((value: string) => string) | null {
   return (value: string) => value.replace(re, "[redacted-audio-url]");
 }
 
-function scrubEvent<T extends Sentry.Event>(
+export function scrubEvent<T extends Sentry.Event>(
   event: T,
   scrub: (value: string) => string,
 ): T {

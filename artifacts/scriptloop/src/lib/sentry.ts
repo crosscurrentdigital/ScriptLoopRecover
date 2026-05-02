@@ -13,10 +13,10 @@ let initialized = false;
 // path shape instead. Server keys are always
 // `audio/<userId>/<timestamp>-<filename>.<ext>` (see r2-server.ts and
 // storage.ts), which is distinctive enough to avoid false positives.
-const AUDIO_URL_RE =
+export const AUDIO_URL_RE =
   /https?:\/\/[^\s"'<>)]+\/audio\/[A-Za-z0-9_-]+\/\d+-[^\s"'<>)]+/gi;
 
-function scrubAudioUrls(value: string): string {
+export function scrubAudioUrls(value: string): string {
   return value.replace(AUDIO_URL_RE, "[redacted-audio-url]");
 }
 
