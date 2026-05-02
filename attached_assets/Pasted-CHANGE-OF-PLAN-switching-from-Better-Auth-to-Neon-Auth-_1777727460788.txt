@@ -1,0 +1,54 @@
+CHANGE OF PLAN — switching from Better Auth to Neon Auth
+
+Stop current work. We are replacing Better Auth with Neon Auth (powered by Stack Auth) as the authentication system. This is a clean swap, not an addition.
+
+WHY: Neon Auth integrates natively with Neon Postgres, syncs users into our database automatically, and removes the need to manage auth tables manually. It's a better fit for our stack.
+
+STEP 1 — REMOVE BETTER AUTH COMPLETELY
+- Uninstall the better-auth package
+- Delete /src/auth/ directory and any Better Auth config files
+- Remove any Better Auth Netlify Functions you created
+- Remove BETTER_AUTH_SECRET and BETTER_AUTH_URL from .env.template
+- Remove any Better Auth tables from the Drizzle schema (do NOT drop them from Neon yet — we'll handle migration manually)
+- Remove all Better Auth imports from the codebase
+
+STEP 2 — SET UP NEON AUTH
+- Fetch current Neon Auth setup docs from https://neon.tech/docs/guides/neon-auth before installing anything. Do not rely on training data — Neon Auth is recent and the docs are authoritative.
+- Follow the official integration path for: React + Vite + Neon Postgres + Drizzle.
+- Install the Neon Auth packages they specify (likely @stackframe/react and related — confirm from docs).
+- Configure the StackProvider / StackHandler at the app root per the docs.
+- Set up the auth handler routes (sign-in, sign-up, callback, etc.) per the docs — these may be client-side routes, not Netlify Functions.
+
+STEP 3 — ENVIRONMENT VARIABLES
+Update .env.template to include exactly the variables Neon Auth requires. Based on current docs, these are typically:
+- NEXT_PUBLIC_STACK_PROJECT_ID  (or VITE_STACK_PROJECT_ID for Vite — confirm from docs)
+- NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY (or VITE_ equivalent)
+- STACK_SECRET_SERVER_KEY
+Use the correct VITE_ prefix for client-exposed vars since we're using Vite, not Next.js. Confirm exact names from the docs before adding.
+
+STEP 4 — DRIZZLE SCHEMA INTEGRATION
+- Neon Auth syncs users into a `neon_auth.users_sync` schema/table automatically. Reference that table from our `scripts.userId` foreign key.
+- Update /src/db/schema.ts so `userId` references the Neon Auth user ID format.
+- Confirm the foreign key approach from the Neon Auth Drizzle docs — do not guess.
+
+STEP 5 — UPDATE THE CLIENT
+- Replace any Better Auth hooks (useSession, signIn, signOut) with Neon Auth equivalents (likely useUser, useStackApp from @stackframe/react — confirm from docs).
+- Update any protected route logic to use Neon Auth's session/user API.
+
+STEP 6 — VERIFY
+- I should be able to: sign up via Neon Auth → see myself appear in the neon_auth.users_sync table in Neon → create a script → see it associated with my user ID.
+- The Better Auth code should be entirely gone — grep for "better-auth" and "BETTER_AUTH" should return zero matches.
+
+CONSTRAINTS (unchanged):
+- This is for production — code quality matters
+- Must work identically in Replit, local Cursor, and Netlify
+- No Replit-specific features
+- Capacitor-compatible (browser-only APIs in /src)
+
+When complete, report:
+1. What packages were removed and added
+2. What env var names you settled on (exact strings)
+3. Confirmation that grep -r "better-auth" returns nothing
+4. A working live URL with sign-up flow
+
+Begin.
