@@ -1,14 +1,9 @@
 import { getVoices } from "../../src/lib/elevenlabs";
 import { getSession, jsonResponse } from "./_lib/session";
 import { withSentry, captureFunctionError } from "./_lib/sentry";
-import {
-  checkAndIncrement,
-  getRateLimitStatus,
-  rateLimitResponse,
-} from "./_lib/rateLimit";
+import { getRateLimitStatus } from "./_lib/rateLimit";
 
-const MAX_TEXT_LENGTH = 2000;
-const ROUTE = "POST /api/audio/generate";
+const ROUTE = "GET /api/audio/*";
 // Must match the route name used by netlify/functions/generate-audio.ts so
 // /quota reflects the same bucket users actually spend against.
 const GENERATE_AUDIO_ROUTE = "generate-audio";
@@ -69,40 +64,10 @@ const handler = async (req: Request): Promise<Response> => {
     }
   }
 
-  // POST /api/audio/generate — guard against accidental over-use even if
-  // not the primary generate path. Mirrors /api/generate-audio limits.
-  if (url.pathname.endsWith("/generate") && req.method === "POST") {
-    let payload: unknown;
-    try {
-      payload = await req.json();
-    } catch {
-      return jsonResponse({ error: "Invalid JSON body" }, 400);
-    }
-    const body = payload as { text?: unknown };
-    const text = typeof body.text === "string" ? body.text : "";
-
-    if (!text.trim()) return jsonResponse({ error: "text is required" }, 400);
-    if (text.length > MAX_TEXT_LENGTH) {
-      return jsonResponse(
-        {
-          error: "too_long",
-          message: `Scripts are limited to ${MAX_TEXT_LENGTH} characters.`,
-        },
-        400,
-      );
-    }
-
-    const limitResult = await checkAndIncrement({
-      userId: session.userId,
-      route: "audio.generate",
-    });
-    if (!limitResult.allowed) return rateLimitResponse(limitResult);
-
-    return jsonResponse(
-      { error: "Use /api/generate-audio instead" },
-      404,
-    );
-  }
+  // POST /api/audio/generate was a legacy stub that always 404'd while
+  // double-counting against a separate "audio.generate" rate-limit bucket
+  // the UI never sees. Removed so the only audio generation path is
+  // /api/generate-audio and the only quota bucket is "generate-audio".
 
   return jsonResponse({ error: "Not found" }, 404);
 };
