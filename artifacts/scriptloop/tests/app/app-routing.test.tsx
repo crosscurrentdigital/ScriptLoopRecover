@@ -1,10 +1,5 @@
-/**
- * Minimal smoke test that renders <App /> itself (not just the extracted
- * RequireAuth/PublicRoute) so that a regression in App.tsx route wiring —
- * for example, a /dashboard route that forgets its <ProtectedRoute>
- * wrapper — would fail this test. Heavyweight providers (NeonAuthUI,
- * Sentry trigger) are stubbed; only the routing surface is exercised.
- */
+// App-level route-wiring smoke. Pages and heavy providers are stubbed
+// so only the route table itself is exercised.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 
@@ -21,8 +16,6 @@ vi.mock("@/components/SentryTestTrigger", () => ({
   SentryTestTrigger: () => null,
 }));
 vi.mock("@/components/ui/toaster", () => ({ Toaster: () => null }));
-// Page components reach into Neon Auth UI, fetch hooks, etc. We're only
-// testing route wiring here, so render them as inert markers.
 vi.mock("@/pages/LoginPage", () => ({
   default: () => <div data-testid="login-page">login</div>,
 }));

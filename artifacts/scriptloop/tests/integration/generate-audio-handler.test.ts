@@ -1,12 +1,5 @@
-/**
- * Integration test for /api/generate-audio against a real in-process
- * Postgres (PGlite). The rate-limit table, ON CONFLICT DO UPDATE upsert,
- * and per-user/per-route bucket logic are NOT mocked — only ElevenLabs
- * and R2 are stubbed via the audioPipeline mock.
- *
- * This is the canonical end-to-end exercise of the per-user hourly
- * limit: 20 successful calls then a 21st that must return 429.
- */
+// /api/generate-audio against a real PGlite-backed rate_limits table.
+// Only ElevenLabs/R2 are stubbed.
 import {
   afterAll,
   beforeAll,
@@ -102,15 +95,10 @@ describe("integration: real hourly limit on /api/generate-audio", () => {
     expect(body.limit).toBe(20);
     expect(denied.headers.get("Retry-After")).toBeTruthy();
 
-    // The 21st call must NOT have generated audio.
     expect(
       audioPipelineMock.generateAndUploadAudio,
     ).toHaveBeenCalledTimes(20);
 
-    // Real DB state: exactly one rate_limits row reflecting 21 increments.
-    // (If the unique constraint on (user_id, route, window_start) were
-    // missing, ON CONFLICT DO UPDATE would have raised instead, and we
-    // would either see N rows here or earlier 500s above.)
     const rl = await testClient.query<{ count: number; n: number }>(
       `SELECT count, (SELECT count(*)::int FROM rate_limits) AS n
          FROM rate_limits
