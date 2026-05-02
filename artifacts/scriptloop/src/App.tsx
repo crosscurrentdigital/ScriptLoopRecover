@@ -6,6 +6,7 @@ import { authClient } from "@/lib/auth-client";
 import LoginPage from "@/pages/LoginPage";
 import RegisterPage from "@/pages/RegisterPage";
 import DashboardPage from "@/pages/DashboardPage";
+import ScriptEditorPage from "@/pages/ScriptEditorPage";
 
 const queryClient = new QueryClient();
 
@@ -64,6 +65,22 @@ function AppRoutes() {
           element={
             <ProtectedRoute>
               <DashboardPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/scripts/new"
+          element={
+            <ProtectedRoute>
+              <ScriptEditorPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/scripts/:id"
+          element={
+            <ProtectedRoute>
+              <ScriptEditorPage />
             </ProtectedRoute>
           }
         />
