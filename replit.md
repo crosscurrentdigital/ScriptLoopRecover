@@ -30,6 +30,16 @@ pnpm workspace monorepo using TypeScript. The primary artifact is ScriptLoop —
 - `pnpm --filter @workspace/scriptloop run db:generate` — generate a new SQL migration from `src/db/schema.ts`
 - `pnpm --filter @workspace/scriptloop run db:migrate` — apply pending migrations to `$DATABASE_URL` (this is what the Netlify build runs)
 - `pnpm --filter @workspace/scriptloop run db:push:dev` — dev-only escape hatch that skips writing a migration file. **Never point this at prod.** See `artifacts/scriptloop/MIGRATIONS.md`.
+- `pnpm --filter @workspace/scriptloop run test` — run vitest smoke + authorization tests once
+- `pnpm --filter @workspace/scriptloop run test:watch` — vitest watch mode
+
+## Tests
+
+Tests live in `artifacts/scriptloop/tests/`:
+- `tests/api/` — handler-level tests for `netlify/functions/*`. Drizzle's `db` is replaced with an in-memory chainable fake (`tests/helpers/dbMock.ts`); `getSession`, `checkAndIncrement`, and the audio pipeline are mocked with `vi.mock`. Covers: 401 on every protected route, cross-user 404 on scripts CRUD, `>2000`-char rejection, rate-limit 429 wiring, and the atomic `POST /api/scripts/with-audio` happy + failure paths.
+- `tests/app/` — React Testing Library smoke for `RequireAuth` / `PublicRoute` routing in a `MemoryRouter`. `@/lib/auth-client` is mocked so we can drive `useSession` state directly.
+
+There is intentionally **no live-DB integration test** today — spinning up a Neon branch from CI is out of scope for the current task. The handler-level tests catch regressions in auth/ownership/rate-limit wiring; a future task can add a real round-trip test against an ephemeral Neon branch.
 
 ## Project Structure
 
