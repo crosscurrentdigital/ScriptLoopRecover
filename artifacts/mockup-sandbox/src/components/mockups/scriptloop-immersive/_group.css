@@ -1,0 +1,48 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Outfit', sans-serif;
+  --font-serif: 'Playfair Display', serif;
+
+  --color-background: oklch(0.15 0.05 280);
+  --color-foreground: oklch(0.98 0 0);
+  --color-card: oklch(0.18 0.05 280);
+  --color-card-foreground: oklch(0.98 0 0);
+  --color-popover: oklch(0.18 0.05 280);
+  --color-popover-foreground: oklch(0.98 0 0);
+  --color-primary: oklch(0.6 0.2 320); /* Magenta */
+  --color-primary-foreground: oklch(0.98 0 0);
+  --color-secondary: oklch(0.25 0.05 280);
+  --color-secondary-foreground: oklch(0.98 0 0);
+  --color-muted: oklch(0.25 0.05 280);
+  --color-muted-foreground: oklch(0.7 0.02 280);
+  --color-accent: oklch(0.7 0.15 40); /* Warm orange */
+  --color-accent-foreground: oklch(0.98 0 0);
+  --color-destructive: oklch(0.4 0.15 20);
+  --color-destructive-foreground: oklch(0.98 0 0);
+  --color-border: oklch(0.25 0.05 280);
+  --color-input: oklch(0.25 0.05 280);
+  --color-ring: oklch(0.6 0.2 320);
+  --radius: 0.5rem;
+}
+
+.immersive-theme {
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans);
+  min-height: 100vh;
+}
+
+.bg-gradient-immersive {
+  background: linear-gradient(145deg, oklch(0.15 0.05 280), oklch(0.2 0.08 310), oklch(0.18 0.06 40));
+}
+
+.text-gradient-immersive {
+  background: linear-gradient(to right, oklch(0.7 0.2 320), oklch(0.8 0.15 40));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.glow-immersive {
+  box-shadow: 0 0 40px -10px oklch(0.6 0.2 320 / 0.3), 0 0 20px -5px oklch(0.7 0.15 40 / 0.2);
+}
