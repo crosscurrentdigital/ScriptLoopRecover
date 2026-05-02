@@ -79,7 +79,23 @@ export function useDeleteScript() {
   return useMutation({
     mutationFn: (id: number) =>
       http<void>(`/api/scripts/${id}`, { method: "DELETE" }),
-    onSuccess: () => {
+    onMutate: async (id: number) => {
+      await qc.cancelQueries({ queryKey: ["scripts"] });
+      const previous = qc.getQueryData<Script[]>(["scripts"]);
+      if (previous) {
+        qc.setQueryData<Script[]>(
+          ["scripts"],
+          previous.filter((s) => s.id !== id),
+        );
+      }
+      return { previous };
+    },
+    onError: (_err, _id, context) => {
+      if (context?.previous) {
+        qc.setQueryData(["scripts"], context.previous);
+      }
+    },
+    onSettled: () => {
       qc.invalidateQueries({ queryKey: ["scripts"] });
     },
   });

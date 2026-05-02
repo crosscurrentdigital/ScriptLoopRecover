@@ -1,15 +1,46 @@
 import { Link } from "react-router-dom";
+import { useState } from "react";
+import { Plus } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { useScripts, useDeleteScript } from "@/lib/api";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
+import { ScriptList } from "@/components/ScriptList";
+
+function CardSkeleton() {
+  return (
+    <Card className="flex flex-col">
+      <div className="flex flex-col space-y-3 p-6 pb-3">
+        <div className="flex items-start justify-between gap-2">
+          <Skeleton className="h-5 w-3/4" />
+          <Skeleton className="h-8 w-8 rounded-md" />
+        </div>
+        <Skeleton className="h-4 w-full" />
+        <Skeleton className="h-4 w-5/6" />
+      </div>
+      <div className="mt-auto flex items-center justify-between gap-2 p-6 pt-0">
+        <Skeleton className="h-3 w-20" />
+        <Skeleton className="h-3 w-16" />
+      </div>
+    </Card>
+  );
+}
+
+function GridSkeleton() {
+  return (
+    <div
+      className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+      aria-busy="true"
+      aria-label="Loading scripts"
+    >
+      {Array.from({ length: 6 }).map((_, i) => (
+        <CardSkeleton key={i} />
+      ))}
+    </div>
+  );
+}
 
 export default function DashboardPage() {
   const session = authClient.useSession();
@@ -17,6 +48,7 @@ export default function DashboardPage() {
   const { data: scripts, isLoading, error } = useScripts();
   const deleteScript = useDeleteScript();
   const { toast } = useToast();
+  const [deletingId, setDeletingId] = useState<number | null>(null);
 
   const handleSignOut = async () => {
     await authClient.signOut();
@@ -24,23 +56,33 @@ export default function DashboardPage() {
   };
 
   const handleDelete = async (id: number, title: string) => {
-    if (!window.confirm(`Delete "${title}"? This cannot be undone.`)) return;
+    setDeletingId(id);
     try {
       await deleteScript.mutateAsync(id);
-      toast({ title: "Script deleted" });
+      toast({ title: "Script deleted", description: `"${title}" was removed.` });
     } catch (e) {
       const message = e instanceof Error ? e.message : "Delete failed";
-      toast({ title: "Error", description: message, variant: "destructive" });
+      toast({
+        title: "Couldn't delete script",
+        description: message,
+        variant: "destructive",
+      });
+    } finally {
+      setDeletingId(null);
     }
   };
+
+  const scriptCount = scripts?.length ?? 0;
 
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b">
-        <div className="container mx-auto flex items-center justify-between px-4 py-3">
+        <div className="container mx-auto flex items-center justify-between gap-3 px-4 py-3">
           <h1 className="text-xl font-semibold">ScriptLoop</h1>
           <div className="flex items-center gap-3">
-            <span className="text-sm text-muted-foreground">{user?.email}</span>
+            <span className="hidden text-sm text-muted-foreground sm:inline">
+              {user?.email}
+            </span>
             <Button variant="outline" size="sm" onClick={handleSignOut}>
               Sign out
             </Button>
@@ -49,23 +91,26 @@ export default function DashboardPage() {
       </header>
 
       <main className="container mx-auto px-4 py-8">
-        <div className="mb-6 flex items-center justify-between">
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-2xl font-bold">Your scripts</h2>
-            <p className="text-muted-foreground mt-1 text-sm">
-              {scripts?.length
-                ? `${scripts.length} script${scripts.length === 1 ? "" : "s"}`
-                : "Add a script to start memorizing"}
+            <p className="mt-1 text-sm text-muted-foreground">
+              {isLoading
+                ? "Loading…"
+                : scriptCount > 0
+                  ? `${scriptCount} script${scriptCount === 1 ? "" : "s"}`
+                  : "Add a script to start memorizing"}
             </p>
           </div>
-          <Button asChild>
-            <Link to="/scripts/new">New script</Link>
+          <Button asChild size="lg">
+            <Link to="/scripts/new">
+              <Plus className="h-4 w-4" />
+              New script
+            </Link>
           </Button>
         </div>
 
-        {isLoading && (
-          <p className="text-sm text-muted-foreground">Loading…</p>
-        )}
+        {isLoading && <GridSkeleton />}
 
         {error && (
           <Card className="border-destructive">
@@ -77,54 +122,12 @@ export default function DashboardPage() {
           </Card>
         )}
 
-        {scripts && scripts.length === 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle>No scripts yet</CardTitle>
-              <CardDescription>
-                Create your first script and ScriptLoop will generate audio you
-                can loop to memorize.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button asChild>
-                <Link to="/scripts/new">Create your first script</Link>
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-
-        {scripts && scripts.length > 0 && (
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {scripts.map((script) => (
-              <Card key={script.id} className="flex flex-col">
-                <CardHeader>
-                  <CardTitle className="text-base">{script.title}</CardTitle>
-                  <CardDescription className="line-clamp-2">
-                    {script.content.slice(0, 120) || "(empty)"}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="mt-auto flex items-center justify-between gap-2">
-                  <div className="text-xs text-muted-foreground">
-                    {script.audioUrl ? "♪ audio ready" : "no audio yet"}
-                  </div>
-                  <div className="flex gap-2">
-                    <Button asChild size="sm" variant="outline">
-                      <Link to={`/scripts/${script.id}`}>Open</Link>
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => handleDelete(script.id, script.title)}
-                      disabled={deleteScript.isPending}
-                    >
-                      Delete
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+        {!isLoading && !error && scripts && (
+          <ScriptList
+            scripts={scripts}
+            onDelete={handleDelete}
+            deletingId={deletingId}
+          />
         )}
       </main>
     </div>
