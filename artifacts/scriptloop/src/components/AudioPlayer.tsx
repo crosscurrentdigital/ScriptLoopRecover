@@ -81,15 +81,15 @@ export function AudioPlayer({
         className="w-full"
         preload="auto"
       />
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <Button
-          size="sm"
           variant={isLooping ? "default" : "outline"}
           onClick={() => setIsLooping((v) => !v)}
+          className="px-5"
         >
           {isLooping ? "Looping ✓" : "Loop"}
         </Button>
-        <span className="text-xs text-muted-foreground">
+        <span className="text-sm text-muted-foreground sm:text-xs">
           {isLooping
             ? `Will replay with a ${gapSeconds}s gap`
             : "Toggle to auto-replay"}

@@ -95,7 +95,7 @@ export function ScriptCard({
                 onKeyDown={(e) => {
                   e.stopPropagation();
                 }}
-                className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                className="h-11 w-11 text-muted-foreground active:text-destructive sm:h-8 sm:w-8 sm:hover:text-destructive"
               >
                 <Trash2 className="h-4 w-4" />
               </Button>

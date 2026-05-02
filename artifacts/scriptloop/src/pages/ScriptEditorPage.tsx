@@ -311,11 +311,12 @@ function CreateEditor() {
         </Card>
       )}
 
-      <div className="flex items-center justify-end gap-2">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
         <Button
           onClick={handleGenerateAndSave}
           disabled={isSubmitting}
           size="lg"
+          className="w-full sm:w-auto"
         >
           {phase === "saving"
             ? "Saving…"
@@ -392,9 +393,9 @@ function EditExistingEditor({ script }: { script: Script }) {
 
   return (
     <main className="container mx-auto max-w-3xl px-4 py-6 space-y-6">
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold tracking-tight">Edit script</h1>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button asChild variant="ghost" size="sm">
             <Link to={`/scripts/${script.id}`}>Cancel</Link>
           </Button>

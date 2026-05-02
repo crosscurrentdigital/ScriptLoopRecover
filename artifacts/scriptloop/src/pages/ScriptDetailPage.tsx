@@ -99,7 +99,7 @@ export default function ScriptDetailPage() {
 
   return (
     <main className="container mx-auto max-w-3xl px-4 py-6 space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
         <div className="min-w-0">
           <h1 className="text-2xl font-bold tracking-tight truncate">
             {script.title || "Untitled"}
@@ -110,7 +110,7 @@ export default function ScriptDetailPage() {
             </p>
           )}
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
           {script.audioUrl && (
             <Button asChild variant="default" size="sm">
               <Link to={`/scripts/${script.id}/zen`}>Enter Zen Mode</Link>
