@@ -1,75 +1,130 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 export interface UseLoopedAudioOptions {
-  src: string;
-  gapSeconds: number;
+  audioUrl?: string;
+  src?: string;
+  initialGapSeconds?: number;
+  gapSeconds?: number;
+  onLoopComplete?: (loopNumber: number) => void;
 }
 
 export interface UseLoopedAudioResult {
-  audioRef: React.RefObject<HTMLAudioElement | null>;
+  audioRef: React.MutableRefObject<HTMLAudioElement | null>;
   isPlaying: boolean;
-  toggle: () => void;
   loopCount: number;
+  gapSeconds: number;
+  play: () => void;
+  pause: () => void;
+  stop: () => void;
+  toggle: () => void;
+  setGapSeconds: (next: number) => void;
 }
 
-export function useLoopedAudio({
-  src,
-  gapSeconds,
-}: UseLoopedAudioOptions): UseLoopedAudioResult {
+export function useLoopedAudio(
+  options: UseLoopedAudioOptions,
+): UseLoopedAudioResult {
+  const audioUrl = options.audioUrl ?? options.src ?? "";
+  const initialGap = options.initialGapSeconds ?? options.gapSeconds ?? 2;
+
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const timer = useRef<number | undefined>(undefined);
+  const internalAudioRef = useRef<HTMLAudioElement | null>(null);
+
   const [isPlaying, setIsPlaying] = useState(false);
-  const isPlayingRef = useRef(false);
   const [loopCount, setLoopCount] = useState(0);
+  const [gapSeconds, setGapSecondsState] = useState(initialGap);
+
+  const isPlayingRef = useRef(false);
+  const gapRef = useRef(initialGap);
+  const loopRef = useRef(0);
+  const timer = useRef<number | undefined>(undefined);
+  const onLoopCompleteRef = useRef(options.onLoopComplete);
 
   useEffect(() => {
-    isPlayingRef.current = isPlaying;
-    const audio = audioRef.current;
-    if (!audio) return;
-    if (isPlaying) {
-      audio.play().catch(() => {
-        setIsPlaying(false);
-      });
-    } else {
-      audio.pause();
-      if (timer.current !== undefined) {
-        window.clearTimeout(timer.current);
-        timer.current = undefined;
-      }
+    onLoopCompleteRef.current = options.onLoopComplete;
+  }, [options.onLoopComplete]);
+
+  useEffect(() => {
+    gapRef.current = gapSeconds;
+  }, [gapSeconds]);
+
+  const controlledGap = options.gapSeconds;
+  useEffect(() => {
+    if (controlledGap === undefined) return;
+    gapRef.current = controlledGap;
+    setGapSecondsState(controlledGap);
+  }, [controlledGap]);
+
+  const getAudio = useCallback((): HTMLAudioElement | null => {
+    if (audioRef.current) return audioRef.current;
+    if (typeof window === "undefined") return null;
+    if (!internalAudioRef.current) {
+      const el = new Audio();
+      el.preload = "auto";
+      internalAudioRef.current = el;
     }
-  }, [isPlaying]);
+    return internalAudioRef.current;
+  }, []);
 
   useEffect(() => {
-    setLoopCount(0);
+    const el = internalAudioRef.current;
+    if (el && audioUrl && el.src !== audioUrl) {
+      el.src = audioUrl;
+    }
+  }, [audioUrl]);
+
+  useEffect(() => {
+    isPlayingRef.current = false;
     setIsPlaying(false);
-  }, [src]);
+    loopRef.current = 0;
+    setLoopCount(0);
+    if (timer.current !== undefined) {
+      window.clearTimeout(timer.current);
+      timer.current = undefined;
+    }
+  }, [audioUrl]);
+
+  const clearTimer = useCallback(() => {
+    if (timer.current !== undefined) {
+      window.clearTimeout(timer.current);
+      timer.current = undefined;
+    }
+  }, []);
 
   useEffect(() => {
-    const audio = audioRef.current;
+    const audio = getAudio();
     if (!audio) return;
 
     const handleEnded = () => {
-      setLoopCount((c) => c + 1);
+      const next = loopRef.current + 1;
+      loopRef.current = next;
+      setLoopCount(next);
+      onLoopCompleteRef.current?.(next);
+
       if (!isPlayingRef.current) return;
+
+      const gapMs = Math.max(0, gapRef.current) * 1000;
       timer.current = window.setTimeout(() => {
         timer.current = undefined;
         if (!isPlayingRef.current) return;
-        audio.currentTime = 0;
-        audio.play().catch(() => {
+        const a = getAudio();
+        if (!a) return;
+        try {
+          a.currentTime = 0;
+        } catch {
+          /* readyState may not allow seek yet */
+        }
+        a.play().catch(() => {
+          isPlayingRef.current = false;
           setIsPlaying(false);
         });
-      }, gapSeconds * 1000);
+      }, gapMs);
     };
 
     audio.addEventListener("ended", handleEnded);
     return () => {
       audio.removeEventListener("ended", handleEnded);
-      if (timer.current !== undefined) {
-        window.clearTimeout(timer.current);
-        timer.current = undefined;
-      }
     };
-  }, [src, gapSeconds]);
+  }, [getAudio, audioUrl]);
 
   useEffect(() => {
     return () => {
@@ -77,12 +132,82 @@ export function useLoopedAudio({
         window.clearTimeout(timer.current);
         timer.current = undefined;
       }
-      const audio = audioRef.current;
-      if (audio) audio.pause();
+      const internal = internalAudioRef.current;
+      if (internal) {
+        try {
+          internal.pause();
+        } catch {
+          /* ignore */
+        }
+        internal.src = "";
+        internalAudioRef.current = null;
+      }
+      const ext = audioRef.current;
+      if (ext) {
+        try {
+          ext.pause();
+        } catch {
+          /* ignore */
+        }
+      }
     };
   }, []);
 
-  const toggle = useCallback(() => setIsPlaying((p) => !p), []);
+  const play = useCallback(() => {
+    const audio = getAudio();
+    if (!audio) return;
+    isPlayingRef.current = true;
+    setIsPlaying(true);
+    audio.play().catch(() => {
+      isPlayingRef.current = false;
+      setIsPlaying(false);
+    });
+  }, [getAudio]);
 
-  return { audioRef, isPlaying, toggle, loopCount };
+  const pause = useCallback(() => {
+    isPlayingRef.current = false;
+    setIsPlaying(false);
+    clearTimer();
+    const audio = getAudio();
+    if (audio) audio.pause();
+  }, [getAudio, clearTimer]);
+
+  const stop = useCallback(() => {
+    isPlayingRef.current = false;
+    setIsPlaying(false);
+    loopRef.current = 0;
+    setLoopCount(0);
+    clearTimer();
+    const audio = getAudio();
+    if (audio) {
+      audio.pause();
+      try {
+        audio.currentTime = 0;
+      } catch {
+        /* readyState may not allow seek yet */
+      }
+    }
+  }, [getAudio, clearTimer]);
+
+  const toggle = useCallback(() => {
+    if (isPlayingRef.current) pause();
+    else play();
+  }, [pause, play]);
+
+  const setGapSeconds = useCallback((next: number) => {
+    gapRef.current = next;
+    setGapSecondsState(next);
+  }, []);
+
+  return {
+    audioRef,
+    isPlaying,
+    loopCount,
+    gapSeconds,
+    play,
+    pause,
+    stop,
+    toggle,
+    setGapSeconds,
+  };
 }
