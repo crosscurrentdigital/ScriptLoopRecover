@@ -109,10 +109,12 @@ export function rateLimitResponse(
   const message = `You've hit the hourly limit of ${result.limit} audio generations. Try again in ${minutes} minute${minutes === 1 ? "" : "s"}.`;
   return new Response(
     JSON.stringify({
-      error: "rate_limited",
-      message,
-      retryAfterSeconds: result.retryAfterSeconds,
-      limit: result.limit,
+      error: {
+        code: "rate_limited",
+        message,
+        retryAfterSeconds: result.retryAfterSeconds,
+        details: { limit: result.limit },
+      },
     }),
     {
       status: 429,

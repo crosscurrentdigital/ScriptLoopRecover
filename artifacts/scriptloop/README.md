@@ -268,7 +268,7 @@ netlify/
       rateLimit.ts      - checkAndIncrement + 429 Response builder
     scripts.ts          - Scripts CRUD (/api/scripts/*)
     generate-audio.ts   - ElevenLabs + R2 + DB attach (rate-limited)
-    audio.ts            - /api/audio/voices, /api/audio/generate guard
+    audio.ts            - /api/audio/voices + /api/audio/quota
     storage.ts          - R2 presign (/api/storage/presign)
     cleanup-rate-limits.ts - Scheduled (@daily) purge of rate_limits rows older than 7 days
 ```

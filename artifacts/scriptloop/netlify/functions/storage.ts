@@ -2,6 +2,7 @@ import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { getSession } from "./_lib/session";
 import { withSentry } from "./_lib/sentry";
+import { errorResponse, parseJsonBody, presignSchema } from "./_lib/schemas";
 
 const s3 = new S3Client({
   region: "auto",
@@ -14,24 +15,17 @@ const s3 = new S3Client({
 
 const handler = async (req: Request): Promise<Response> => {
   if (req.method !== "POST") {
-    return new Response(JSON.stringify({ error: "Method not allowed" }), {
-      status: 405,
-      headers: { "Content-Type": "application/json" },
-    });
+    return errorResponse(405, "method_not_allowed", "Method not allowed.");
   }
 
   const session = await getSession(req);
   if (!session) {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), {
-      status: 401,
-      headers: { "Content-Type": "application/json" },
-    });
+    return errorResponse(401, "unauthorized", "Sign in to continue.");
   }
 
-  const { fileName, contentType } = (await req.json()) as {
-    fileName: string;
-    contentType: string;
-  };
+  const parsed = await parseJsonBody(req, presignSchema);
+  if (!parsed.ok) return parsed.response;
+  const { fileName, contentType } = parsed.data;
 
   const key = `audio/${session.userId}/${Date.now()}-${fileName}`;
 

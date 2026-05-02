@@ -40,13 +40,26 @@ async function http<T>(
     let retryAfterSeconds: number | undefined;
     try {
       const body = await res.json();
-      // Prefer the structured `message` (user-friendly) over the machine
-      // `error` code so toasts read nicely.
-      if (typeof body?.message === "string") message = body.message;
-      else if (typeof body?.error === "string") message = body.error;
-      if (typeof body?.error === "string") code = body.error;
-      if (typeof body?.retryAfterSeconds === "number") {
-        retryAfterSeconds = body.retryAfterSeconds;
+      // New shape: { error: { code, message, retryAfterSeconds?, details? } }
+      if (body?.error && typeof body.error === "object") {
+        const err = body.error as {
+          code?: unknown;
+          message?: unknown;
+          retryAfterSeconds?: unknown;
+        };
+        if (typeof err.message === "string") message = err.message;
+        if (typeof err.code === "string") code = err.code;
+        if (typeof err.retryAfterSeconds === "number") {
+          retryAfterSeconds = err.retryAfterSeconds;
+        }
+      } else {
+        // Backwards-compat: legacy flat shape { error, message, retryAfterSeconds }
+        if (typeof body?.message === "string") message = body.message;
+        else if (typeof body?.error === "string") message = body.error;
+        if (typeof body?.error === "string") code = body.error;
+        if (typeof body?.retryAfterSeconds === "number") {
+          retryAfterSeconds = body.retryAfterSeconds;
+        }
       }
     } catch {
       // ignore — keep statusText

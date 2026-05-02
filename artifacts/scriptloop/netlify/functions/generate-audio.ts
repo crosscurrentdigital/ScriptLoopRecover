@@ -2,64 +2,37 @@ import {
   attachAudioToScript,
   getScriptForUser,
 } from "../../src/lib/scripts-server";
-import { getSession, jsonResponse } from "./_lib/session";
+import { getSession } from "./_lib/session";
 import { withSentry, captureFunctionError } from "./_lib/sentry";
 import { checkAndIncrement, rateLimitResponse } from "./_lib/rateLimit";
 import {
   AudioPipelineError,
-  MAX_TEXT_LENGTH,
   checkAudioConfig,
   generateAndUploadAudio,
 } from "./_lib/audioPipeline";
+import {
+  errorResponse,
+  generateAudioSchema,
+  parseJsonBody,
+} from "./_lib/schemas";
 
 const ROUTE = "POST /api/generate-audio";
 
 const handler = async (req: Request): Promise<Response> => {
   if (req.method !== "POST") {
-    return jsonResponse({ error: "Method not allowed" }, 405);
+    return errorResponse(405, "method_not_allowed", "Method not allowed.");
   }
 
   const session = await getSession(req);
-  if (!session) return jsonResponse({ error: "Unauthorized" }, 401);
+  if (!session) return errorResponse(401, "unauthorized", "Sign in to continue.");
 
   const configError = checkAudioConfig();
-  if (configError) return jsonResponse({ error: configError }, 500);
+  if (configError) return errorResponse(500, "not_configured", configError);
   const apiKey = process.env.ELEVENLABS_API_KEY!;
 
-  let payload: unknown;
-  try {
-    payload = await req.json();
-  } catch {
-    return jsonResponse({ error: "Invalid JSON body" }, 400);
-  }
-
-  const body = payload as {
-    text?: unknown;
-    voiceId?: unknown;
-    scriptId?: unknown;
-  };
-  const text = typeof body.text === "string" ? body.text : "";
-  const voiceId = typeof body.voiceId === "string" ? body.voiceId : "";
-  const scriptId =
-    typeof body.scriptId === "number" && Number.isFinite(body.scriptId)
-      ? body.scriptId
-      : null;
-
-  if (!text.trim()) {
-    return jsonResponse({ error: "text is required" }, 400);
-  }
-  if (text.length > MAX_TEXT_LENGTH) {
-    return jsonResponse(
-      {
-        error: "too_long",
-        message: `Scripts are limited to ${MAX_TEXT_LENGTH} characters.`,
-      },
-      400,
-    );
-  }
-  if (!voiceId.trim()) {
-    return jsonResponse({ error: "voiceId is required" }, 400);
-  }
+  const parsed = await parseJsonBody(req, generateAudioSchema);
+  if (!parsed.ok) return parsed.response;
+  const { text, voiceId, scriptId = null } = parsed.data;
 
   // Per-user, per-hour rate limit (defends against runaway loops and
   // limits ElevenLabs spend). Checked AFTER input validation but BEFORE we
@@ -74,7 +47,7 @@ const handler = async (req: Request): Promise<Response> => {
   // script the caller doesn't own (or that doesn't exist).
   if (scriptId !== null) {
     const owned = await getScriptForUser(scriptId, session.userId);
-    if (!owned) return jsonResponse({ error: "Script not found" }, 404);
+    if (!owned) return errorResponse(404, "not_found", "Script not found.");
   }
 
   let generated;
@@ -92,7 +65,7 @@ const handler = async (req: Request): Promise<Response> => {
         userId: session.userId,
         status: e.status,
       });
-      return jsonResponse({ error: e.message }, e.status);
+      return errorResponse(e.status, "upstream_error", e.message);
     }
     throw e;
   }
@@ -114,18 +87,21 @@ const handler = async (req: Request): Promise<Response> => {
         status: 500,
       });
       const msg = e instanceof Error ? e.message : "Failed to save audio link";
-      return jsonResponse({ error: msg }, 500);
+      return errorResponse(500, "save_failed", msg);
     }
     if (!script) {
-      return jsonResponse({ error: "Script not found" }, 404);
+      return errorResponse(404, "not_found", "Script not found.");
     }
   }
 
-  return jsonResponse({
-    audioUrl: generated.publicUrl,
-    durationSeconds: generated.durationSeconds,
-    script,
-  });
+  return new Response(
+    JSON.stringify({
+      audioUrl: generated.publicUrl,
+      durationSeconds: generated.durationSeconds,
+      script,
+    }),
+    { status: 200, headers: { "Content-Type": "application/json" } },
+  );
 };
 
 export default withSentry(ROUTE, handler);

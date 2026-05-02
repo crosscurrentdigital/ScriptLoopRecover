@@ -1,15 +1,23 @@
 import { db } from "../../src/db/index";
 import { scripts } from "../../src/db/schema";
 import { and, eq } from "drizzle-orm";
-import { getSession, jsonResponse } from "./_lib/session";
+import { getSession } from "./_lib/session";
 import { withSentry, captureFunctionError } from "./_lib/sentry";
 import { checkAndIncrement, rateLimitResponse } from "./_lib/rateLimit";
 import {
   AudioPipelineError,
-  MAX_TEXT_LENGTH,
   checkAudioConfig,
   generateAndUploadAudio,
 } from "./_lib/audioPipeline";
+import {
+  createScriptSchema,
+  createScriptWithAudioSchema,
+  errorResponse,
+  parseJsonBody,
+  parseParam,
+  scriptIdParamSchema,
+  updateScriptSchema,
+} from "./_lib/schemas";
 
 const ROUTE = "/api/scripts/*";
 
@@ -17,7 +25,7 @@ const handler = async (req: Request): Promise<Response> => {
   const session = await getSession(req);
 
   if (!session) {
-    return jsonResponse({ error: "Unauthorized" }, 401);
+    return errorResponse(401, "unauthorized", "Sign in to continue.");
   }
 
   const userId = session.userId;
@@ -26,20 +34,33 @@ const handler = async (req: Request): Promise<Response> => {
   const lastSegment = pathParts[pathParts.length - 1];
   const isWithAudio =
     req.method === "POST" && lastSegment === "with-audio";
-  const scriptId = isWithAudio ? undefined : lastSegment;
+  const hasId =
+    !isWithAudio &&
+    lastSegment !== undefined &&
+    lastSegment !== "scripts";
+
+  let scriptId: number | undefined;
+  if (hasId) {
+    const parsed = parseParam(lastSegment, scriptIdParamSchema, "script id");
+    if (!parsed.ok) return parsed.response;
+    scriptId = parsed.data;
+  }
 
   if (req.method === "GET") {
-    if (scriptId && scriptId !== "scripts") {
+    if (scriptId !== undefined) {
       const [script] = await db
         .select()
         .from(scripts)
-        .where(eq(scripts.id, Number(scriptId)));
+        .where(eq(scripts.id, scriptId));
 
       if (!script || script.userId !== userId) {
-        return jsonResponse({ error: "Not found" }, 404);
+        return errorResponse(404, "not_found", "Script not found.");
       }
 
-      return jsonResponse(script);
+      return new Response(JSON.stringify(script), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     const userScripts = await db
@@ -47,7 +68,10 @@ const handler = async (req: Request): Promise<Response> => {
       .from(scripts)
       .where(eq(scripts.userId, userId));
 
-    return jsonResponse(userScripts);
+    return new Response(JSON.stringify(userScripts), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 
   if (isWithAudio) {
@@ -55,38 +79,9 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   if (req.method === "POST") {
-    let payload: unknown;
-    try {
-      payload = await req.json();
-    } catch {
-      return jsonResponse({ error: "Invalid JSON body" }, 400);
-    }
-    const body = (payload ?? {}) as {
-      title?: unknown;
-      content?: unknown;
-      loopGapSeconds?: unknown;
-    };
-
-    const title = typeof body.title === "string" ? body.title.trim() : "";
-    const content = typeof body.content === "string" ? body.content : "";
-    const loopGapSeconds =
-      typeof body.loopGapSeconds === "number" &&
-      Number.isFinite(body.loopGapSeconds)
-        ? body.loopGapSeconds
-        : 2;
-
-    if (!title) return jsonResponse({ error: "title is required" }, 400);
-    if (!content.trim())
-      return jsonResponse({ error: "content is required" }, 400);
-    if (content.length > MAX_TEXT_LENGTH) {
-      return jsonResponse(
-        {
-          error: "too_long",
-          message: `Scripts are limited to ${MAX_TEXT_LENGTH} characters.`,
-        },
-        400,
-      );
-    }
+    const parsed = await parseJsonBody(req, createScriptSchema);
+    if (!parsed.ok) return parsed.response;
+    const { title, content, loopGapSeconds = 2 } = parsed.data;
 
     const [newScript] = await db
       .insert(scripts)
@@ -98,60 +93,53 @@ const handler = async (req: Request): Promise<Response> => {
       })
       .returning();
 
-    return jsonResponse(newScript, 201);
+    return new Response(JSON.stringify(newScript), {
+      status: 201,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 
   if (req.method === "PUT") {
-    const body = (await req.json()) as Partial<{
-      title: string;
-      content: string;
-      audioUrl: string;
-      audioSource: string;
-      voiceId: string;
-      loopGapSeconds: number;
-    }>;
-
-    if (typeof body.content === "string" && body.content.length > MAX_TEXT_LENGTH) {
-      return jsonResponse(
-        {
-          error: "too_long",
-          message: `Scripts are limited to ${MAX_TEXT_LENGTH} characters.`,
-        },
-        400,
-      );
+    if (scriptId === undefined) {
+      return errorResponse(400, "invalid_param", "Script id is required.");
     }
+    const parsed = await parseJsonBody(req, updateScriptSchema);
+    if (!parsed.ok) return parsed.response;
+    const body = parsed.data;
 
     const [updated] = await db
       .update(scripts)
       .set({ ...body, updatedAt: new Date() })
-      .where(
-        and(eq(scripts.id, Number(scriptId)), eq(scripts.userId, userId)),
-      )
+      .where(and(eq(scripts.id, scriptId), eq(scripts.userId, userId)))
       .returning();
 
     if (!updated) {
-      return jsonResponse({ error: "Not found" }, 404);
+      return errorResponse(404, "not_found", "Script not found.");
     }
 
-    return jsonResponse(updated);
+    return new Response(JSON.stringify(updated), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 
   if (req.method === "DELETE") {
+    if (scriptId === undefined) {
+      return errorResponse(400, "invalid_param", "Script id is required.");
+    }
     const deleted = await db
       .delete(scripts)
-      .where(
-        and(eq(scripts.id, Number(scriptId)), eq(scripts.userId, userId)),
-      )
+      .where(and(eq(scripts.id, scriptId), eq(scripts.userId, userId)))
       .returning({ id: scripts.id });
 
     if (deleted.length === 0) {
-      return jsonResponse({ error: "Not found" }, 404);
+      return errorResponse(404, "not_found", "Script not found.");
     }
 
     return new Response(null, { status: 204 });
   }
 
-  return jsonResponse({ error: "Method not allowed" }, 405);
+  return errorResponse(405, "method_not_allowed", "Method not allowed.");
 };
 
 /**
@@ -166,45 +154,12 @@ async function handleCreateWithAudio(
   req: Request,
   userId: string,
 ): Promise<Response> {
-  let payload: unknown;
-  try {
-    payload = await req.json();
-  } catch {
-    return jsonResponse({ error: "Invalid JSON body" }, 400);
-  }
-
-  const body = payload as {
-    title?: unknown;
-    content?: unknown;
-    voiceId?: unknown;
-    loopGapSeconds?: unknown;
-  };
-  const title = typeof body.title === "string" ? body.title.trim() : "";
-  const content = typeof body.content === "string" ? body.content : "";
-  const voiceId = typeof body.voiceId === "string" ? body.voiceId : "";
-  const loopGapSeconds =
-    typeof body.loopGapSeconds === "number" &&
-    Number.isFinite(body.loopGapSeconds)
-      ? body.loopGapSeconds
-      : 2;
-
-  if (!title) return jsonResponse({ error: "title is required" }, 400);
-  if (!content.trim())
-    return jsonResponse({ error: "content is required" }, 400);
-  if (content.length > MAX_TEXT_LENGTH) {
-    return jsonResponse(
-      {
-        error: "too_long",
-        message: `Scripts are limited to ${MAX_TEXT_LENGTH} characters.`,
-      },
-      400,
-    );
-  }
-  if (!voiceId.trim())
-    return jsonResponse({ error: "voiceId is required" }, 400);
+  const parsed = await parseJsonBody(req, createScriptWithAudioSchema);
+  if (!parsed.ok) return parsed.response;
+  const { title, content, voiceId, loopGapSeconds = 2 } = parsed.data;
 
   const configError = checkAudioConfig();
-  if (configError) return jsonResponse({ error: configError }, 500);
+  if (configError) return errorResponse(500, "not_configured", configError);
   const apiKey = process.env.ELEVENLABS_API_KEY!;
 
   // Share the same hourly bucket as /api/generate-audio so total
@@ -230,7 +185,7 @@ async function handleCreateWithAudio(
         userId,
         status: e.status,
       });
-      return jsonResponse({ error: e.message }, e.status);
+      return errorResponse(e.status, "upstream_error", e.message);
     }
     throw e;
   }
@@ -259,10 +214,13 @@ async function handleCreateWithAudio(
       status: 500,
     });
     const msg = e instanceof Error ? e.message : "Failed to save script";
-    return jsonResponse({ error: msg }, 500);
+    return errorResponse(500, "save_failed", msg);
   }
 
-  return jsonResponse(newScript, 201);
+  return new Response(JSON.stringify(newScript), {
+    status: 201,
+    headers: { "Content-Type": "application/json" },
+  });
 }
 
 export default withSentry(ROUTE, handler);
