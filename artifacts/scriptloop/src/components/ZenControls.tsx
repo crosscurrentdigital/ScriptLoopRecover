@@ -18,7 +18,7 @@ export interface ZenControlsProps {
   visible: boolean;
 }
 
-const GAP_OPTIONS = [0, 1, 2, 3, 4, 5, 6, 8, 10];
+const GAP_OPTIONS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
 export function ZenControls({
   isPlaying,
