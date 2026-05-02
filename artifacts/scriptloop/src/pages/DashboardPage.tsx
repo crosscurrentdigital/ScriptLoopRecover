@@ -1,15 +1,14 @@
-import { useSession, signOut } from "@/auth/client";
+import { authClient } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useToast } from "@/hooks/use-toast";
 
 export default function DashboardPage() {
-  const { data: session } = useSession();
-  const { toast } = useToast();
+  const session = authClient.useSession();
+  const user = session.data?.user;
 
   const handleSignOut = async () => {
-    await signOut({ fetchOptions: { onSuccess: () => { window.location.href = "/login"; } } });
-    toast({ title: "Signed out" });
+    await authClient.signOut();
+    window.location.href = "/sign-in";
   };
 
   return (
@@ -18,9 +17,7 @@ export default function DashboardPage() {
         <div className="container mx-auto flex items-center justify-between px-4 py-3">
           <h1 className="text-xl font-semibold">ScriptLoop</h1>
           <div className="flex items-center gap-3">
-            <span className="text-sm text-muted-foreground">
-              {session?.user.email}
-            </span>
+            <span className="text-sm text-muted-foreground">{user?.email}</span>
             <Button variant="outline" size="sm" onClick={handleSignOut}>
               Sign out
             </Button>
@@ -31,7 +28,7 @@ export default function DashboardPage() {
       <main className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <h2 className="text-2xl font-bold">
-            Welcome, {session?.user.name ?? "there"}
+            Welcome, {user?.name ?? "there"}
           </h2>
           <p className="text-muted-foreground mt-1">
             Your scripts will appear here. Add your first script to get started.
@@ -40,16 +37,19 @@ export default function DashboardPage() {
 
         <Card className="max-w-md">
           <CardHeader>
-            <CardTitle>Phase 1 Complete</CardTitle>
+            <CardTitle>Auth Ready</CardTitle>
             <CardDescription>
-              Authentication is working. Script management coming next.
+              Neon Auth is working. Script management coming next.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground">
-              You are signed in as <strong>{session?.user.email}</strong>.
-              The database schema, Better Auth integration, and Netlify
-              function scaffolding are all set up.
+              Signed in as <strong>{user?.email}</strong>.
+              User data syncs automatically to{" "}
+              <code className="text-xs bg-muted px-1 py-0.5 rounded">
+                neon_auth.users_sync
+              </code>
+              .
             </p>
           </CardContent>
         </Card>

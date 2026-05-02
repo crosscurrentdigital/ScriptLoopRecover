@@ -1,78 +1,75 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
-import { useSession } from "@/auth/client";
+import { NeonAuthUIProvider } from "@neondatabase/auth/react/ui";
+import { authClient } from "@/lib/auth-client";
 import LoginPage from "@/pages/LoginPage";
 import RegisterPage from "@/pages/RegisterPage";
 import DashboardPage from "@/pages/DashboardPage";
 
 const queryClient = new QueryClient();
 
+function Spinner() {
+  return (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+    </div>
+  );
+}
+
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { data: session, isPending } = useSession();
+  const session = authClient.useSession();
 
-  if (isPending) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-      </div>
-    );
-  }
-
-  if (!session) {
-    return <Navigate to="/login" replace />;
-  }
-
+  if (session.isPending) return <Spinner />;
+  if (!session.data) return <Navigate to="/sign-in" replace />;
   return <>{children}</>;
 }
 
 function PublicRoute({ children }: { children: React.ReactNode }) {
-  const { data: session, isPending } = useSession();
+  const session = authClient.useSession();
 
-  if (isPending) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-      </div>
-    );
-  }
-
-  if (session) {
-    return <Navigate to="/dashboard" replace />;
-  }
-
+  if (session.isPending) return <Spinner />;
+  if (session.data) return <Navigate to="/dashboard" replace />;
   return <>{children}</>;
 }
 
-function Router() {
+function AppRoutes() {
+  const navigate = useNavigate();
+
   return (
-    <Routes>
-      <Route path="/" element={<Navigate to="/dashboard" replace />} />
-      <Route
-        path="/login"
-        element={
-          <PublicRoute>
-            <LoginPage />
-          </PublicRoute>
-        }
-      />
-      <Route
-        path="/register"
-        element={
-          <PublicRoute>
-            <RegisterPage />
-          </PublicRoute>
-        }
-      />
-      <Route
-        path="/dashboard"
-        element={
-          <ProtectedRoute>
-            <DashboardPage />
-          </ProtectedRoute>
-        }
-      />
-    </Routes>
+    <NeonAuthUIProvider
+      authClient={authClient}
+      navigate={(href) => navigate(href)}
+    >
+      <Routes>
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route
+          path="/sign-in"
+          element={
+            <PublicRoute>
+              <LoginPage />
+            </PublicRoute>
+          }
+        />
+        <Route
+          path="/sign-up"
+          element={
+            <PublicRoute>
+              <RegisterPage />
+            </PublicRoute>
+          }
+        />
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <DashboardPage />
+            </ProtectedRoute>
+          }
+        />
+      </Routes>
+      <Toaster />
+    </NeonAuthUIProvider>
   );
 }
 
@@ -83,8 +80,7 @@ function App() {
         basename={import.meta.env.BASE_URL?.replace(/\/$/, "") ?? ""}
         future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
       >
-        <Router />
-        <Toaster />
+        <AppRoutes />
       </BrowserRouter>
     </QueryClientProvider>
   );

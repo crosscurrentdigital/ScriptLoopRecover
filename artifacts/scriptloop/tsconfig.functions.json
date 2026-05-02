@@ -12,6 +12,6 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["netlify/**/*", "src/auth/**/*", "src/db/**/*", "src/lib/**/*"],
+  "include": ["netlify/**/*", "src/db/**/*", "src/lib/**/*"],
   "exclude": ["node_modules", "dist"]
 }

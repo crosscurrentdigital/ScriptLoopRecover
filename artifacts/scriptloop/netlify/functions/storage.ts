@@ -1,4 +1,3 @@
-import { auth } from "../../src/auth/server";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
@@ -11,6 +10,25 @@ const s3 = new S3Client({
   },
 });
 
+async function getSession(
+  req: Request,
+): Promise<{ userId: string } | null> {
+  const neonAuthUrl = process.env.VITE_NEON_AUTH_URL;
+  if (!neonAuthUrl) return null;
+  try {
+    const res = await fetch(`${neonAuthUrl}/api/auth/get-session`, {
+      headers: { cookie: req.headers.get("cookie") ?? "" },
+    });
+    if (!res.ok) return null;
+    const data = (await res.json()) as {
+      session?: { userId?: string };
+    };
+    return data?.session?.userId ? { userId: data.session.userId } : null;
+  } catch {
+    return null;
+  }
+}
+
 export default async (req: Request) => {
   if (req.method !== "POST") {
     return new Response(JSON.stringify({ error: "Method not allowed" }), {
@@ -19,7 +37,7 @@ export default async (req: Request) => {
     });
   }
 
-  const session = await auth.api.getSession({ headers: req.headers });
+  const session = await getSession(req);
   if (!session) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
       status: 401,
@@ -32,7 +50,7 @@ export default async (req: Request) => {
     contentType: string;
   };
 
-  const key = `audio/${session.user.id}/${Date.now()}-${fileName}`;
+  const key = `audio/${session.userId}/${Date.now()}-${fileName}`;
 
   const command = new PutObjectCommand({
     Bucket: process.env.R2_BUCKET_NAME,

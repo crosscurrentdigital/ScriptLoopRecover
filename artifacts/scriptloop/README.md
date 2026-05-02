@@ -4,11 +4,11 @@ Production memorization tool. Loop your scripts, memorize with audio.
 
 ## Stack
 
-- Vite + React 18 + TypeScript
+- Vite + React 19 + TypeScript
 - Tailwind CSS + shadcn/ui
 - React Router v6 + TanStack Query
 - Drizzle ORM + Neon (PostgreSQL)
-- Better Auth (email/password)
+- Neon Auth (powered by Better Auth) — email/password
 - Cloudflare R2 (audio storage)
 - ElevenLabs (text-to-speech)
 - Netlify (hosting + serverless functions)
@@ -34,7 +34,7 @@ Production memorization tool. Loop your scripts, memorize with audio.
    ```
    npx netlify dev
    ```
-   Or Vite only (no auth, no API):
+   Or Vite only (auth API calls will fail locally — fine for UI work):
    ```
    npm run dev
    ```
@@ -44,60 +44,46 @@ Production memorization tool. Loop your scripts, memorize with audio.
 | Variable | Description |
 |----------|-------------|
 | `DATABASE_URL` | Neon PostgreSQL connection string |
-| `BETTER_AUTH_SECRET` | Random 32+ char secret (`openssl rand -base64 32`) |
-| `BETTER_AUTH_URL` | App base URL (e.g. `http://localhost:8888` locally, your Netlify URL in prod) |
+| `VITE_NEON_AUTH_URL` | Neon Auth URL from Console → Auth → Configuration |
 | `ELEVENLABS_API_KEY` | ElevenLabs API key |
 | `R2_ACCOUNT_ID` | Cloudflare account ID |
-| `R2_ACCESS_KEY_ID` | R2 access key |
+| `R2_ACCESS_KEY_ID` | R2 S3-compatible access key |
 | `R2_SECRET_ACCESS_KEY` | R2 secret key |
-| `R2_BUCKET_NAME` | R2 bucket name |
+| `R2_BUCKET_NAME` | R2 bucket name (default: `scriptloop`) |
 | `R2_PUBLIC_URL` | R2 public URL (e.g. `https://pub-xxx.r2.dev`) |
 
 ## Deploy to Netlify
 
-1. Push to GitHub:
-   ```
-   git init
-   git add .
-   git commit -m "Initial ScriptLoop setup"
-   git remote add origin https://github.com/YOUR_USERNAME/scriptloop.git
-   git push -u origin main
-   ```
-
-2. Connect the repo to Netlify and set all environment variables in Netlify's dashboard.
-
-3. Netlify will auto-deploy on push.
+The repo is already connected. Set all env vars above in Netlify → Site settings → Environment variables, then push to trigger a deploy.
 
 ## Database Migrations
 
-Generate and apply migrations for schema changes:
 ```
+npm run db:push       # push schema directly (dev/staging)
 npm run db:generate   # generate migration files
-npm run db:migrate    # apply to your database
-npm run db:push       # push directly (dev only)
+npm run db:migrate    # apply migrations
 ```
+
+> Note: The `neon_auth` schema (users_sync table) is managed by Neon Auth automatically — do not include it in migrations.
 
 ## Project Structure
 
 ```
 src/
-  auth/
-    client.ts       - Better Auth browser client
-    server.ts       - Better Auth server config (used in functions)
-  db/
-    schema.ts       - Drizzle schema (auth tables + scripts)
-    index.ts        - Neon connection
   lib/
+    auth-client.ts  - Neon Auth browser client (createAuthClient)
     elevenlabs.ts   - ElevenLabs client
     r2.ts           - R2 upload helper
+  db/
+    schema.ts       - Drizzle schema (references neon_auth.users_sync + scripts table)
+    index.ts        - Neon connection
   pages/
-    LoginPage.tsx
-    RegisterPage.tsx
+    LoginPage.tsx   - Sign-in via AuthView
+    RegisterPage.tsx - Sign-up via AuthView
     DashboardPage.tsx
   components/ui/    - shadcn/ui components
 netlify/
   functions/
-    auth.ts         - Better Auth handler (/api/auth/*)
     scripts.ts      - Scripts CRUD (/api/scripts/*)
     storage.ts      - R2 presign (/api/storage/presign)
 ```

@@ -1,9 +1,28 @@
-import { auth } from "../../src/auth/server";
-import { db, scripts } from "../../src/db/index";
+import { db } from "../../src/db/index";
+import { scripts } from "../../src/db/schema";
 import { eq } from "drizzle-orm";
 
+async function getSession(
+  req: Request,
+): Promise<{ userId: string } | null> {
+  const neonAuthUrl = process.env.VITE_NEON_AUTH_URL;
+  if (!neonAuthUrl) return null;
+  try {
+    const res = await fetch(`${neonAuthUrl}/api/auth/get-session`, {
+      headers: { cookie: req.headers.get("cookie") ?? "" },
+    });
+    if (!res.ok) return null;
+    const data = (await res.json()) as {
+      session?: { userId?: string };
+    };
+    return data?.session?.userId ? { userId: data.session.userId } : null;
+  } catch {
+    return null;
+  }
+}
+
 export default async (req: Request) => {
-  const session = await auth.api.getSession({ headers: req.headers });
+  const session = await getSession(req);
 
   if (!session) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -12,7 +31,7 @@ export default async (req: Request) => {
     });
   }
 
-  const userId = session.user.id;
+  const userId = session.userId;
   const url = new URL(req.url);
   const pathParts = url.pathname.split("/").filter(Boolean);
   const scriptId = pathParts[pathParts.length - 1];
@@ -94,10 +113,7 @@ export default async (req: Request) => {
   }
 
   if (req.method === "DELETE") {
-    await db
-      .delete(scripts)
-      .where(eq(scripts.id, Number(scriptId)));
-
+    await db.delete(scripts).where(eq(scripts.id, Number(scriptId)));
     return new Response(null, { status: 204 });
   }
 

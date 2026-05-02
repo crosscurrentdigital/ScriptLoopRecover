@@ -10,21 +10,19 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:push": "drizzle-kit push",
-    "auth:generate": "npx @better-auth/cli generate"
+    "db:push": "drizzle-kit push"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.787.0",
     "@aws-sdk/s3-request-presigner": "^3.787.0",
-    "@better-auth/drizzle-adapter": "^1.2.7",
+    "@neondatabase/auth": "0.3.0-beta",
     "@neondatabase/serverless": "^0.10.4",
     "@tanstack/react-query": "catalog:",
-    "better-auth": "^1.2.7",
     "drizzle-orm": "catalog:",
-    "zod": "^3.25.76",
     "react": "catalog:",
     "react-dom": "catalog:",
-    "react-router-dom": "^6.30.0"
+    "react-router-dom": "^6.30.0",
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@hookform/resolvers": "^3.10.0",
