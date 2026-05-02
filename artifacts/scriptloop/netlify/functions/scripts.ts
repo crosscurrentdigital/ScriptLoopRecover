@@ -218,9 +218,9 @@ async function handleCreateWithAudio(
     throw e;
   }
 
-  // Audio is in R2 and never referenced by a row if INSERT fails — the
-  // orphaned object is harmless and naturally cycled by R2 lifecycle policy
-  // (or future cleanup task). The important invariant is: no orphan ROW.
+  // If the INSERT below fails, the uploaded R2 object is left
+  // unreferenced — harmless, and orphan-object cleanup is out of scope.
+  // The invariant this endpoint guarantees is: no orphan script ROW.
   let newScript;
   try {
     [newScript] = await db
