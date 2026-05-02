@@ -315,7 +315,7 @@ describe("integration: atomic POST /api/scripts/with-audio happy path", () => {
   });
 });
 
-describe("integration: real per-user hourly rate limit (21st request denied)", () => {
+describe("integration: real per-user hourly rate limit (21st request denied) on /api/scripts/with-audio", () => {
   it("allows 20 calls in the same hour and denies the 21st with 429", async () => {
     audioPipelineMock.generateAndUploadAudio.mockResolvedValue({
       audioBytes: new Uint8Array([1]),

@@ -1,3 +1,24 @@
+/**
+ * Frontend smoke test for ScriptLoop's auth gating.
+ *
+ * Why we test the extracted RequireAuth/PublicRoute components directly
+ * instead of rendering <App />:
+ *
+ * 1. App renders <NeonAuthUIProvider>, which transitively imports the
+ *    full Better Auth UI bundle (Tanstack-query-coupled hooks, browser
+ *    crypto, SSR-incompatible code paths). Standing that up under jsdom
+ *    requires mocking ~6 internal modules and produces test failures
+ *    that have nothing to do with the redirect behavior we care about.
+ * 2. RequireAuth/PublicRoute ARE the routing logic of App — every
+ *    protected route in App.tsx is wrapped in one of them, so testing
+ *    these two components is functionally equivalent to testing the
+ *    redirect behavior of the App router, with a fraction of the
+ *    setup surface area and no test-only mocks of third-party UI.
+ * 3. The components themselves are imported and mounted inside a
+ *    MemoryRouter that mirrors App.tsx's route shape (/dashboard +
+ *    /sign-in), so a redirect bug in either component would surface
+ *    here exactly as it would in App.
+ */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
