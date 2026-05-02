@@ -1,0 +1,8 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "bSL3TF5mKecVEmr2ecuW9"
+uri = "file://artifacts/scriptloop/public/og-image.png"
+type = "image"
+title = "scriptloop og banner"

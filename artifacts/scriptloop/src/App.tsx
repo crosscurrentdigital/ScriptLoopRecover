@@ -10,7 +10,9 @@ import ScriptEditorPage from "@/pages/ScriptEditorPage";
 import ScriptDetailPage from "@/pages/ScriptDetailPage";
 import ZenMode from "@/pages/ZenMode";
 import NotFoundPage from "@/pages/NotFoundPage";
+import Landing from "@/pages/Landing";
 import { AppHeader } from "@/components/AppHeader";
+import { Footer } from "@/components/Footer";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 const queryClient = new QueryClient();
@@ -30,13 +32,20 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
+function ProtectedRoute({
+  children,
+  withFooter = false,
+}: {
+  children: React.ReactNode;
+  withFooter?: boolean;
+}) {
   return (
     <RequireAuth>
       <ErrorBoundary>
         <div className="min-h-screen bg-background flex flex-col">
           <AppHeader />
           <div className="flex-1">{children}</div>
+          {withFooter && <Footer />}
         </div>
       </ErrorBoundary>
     </RequireAuth>
@@ -68,7 +77,14 @@ function AppRoutes() {
       navigate={(href) => navigate(href)}
     >
       <Routes>
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route
+          path="/"
+          element={
+            <PublicRoute>
+              <Landing />
+            </PublicRoute>
+          }
+        />
         <Route
           path="/sign-in"
           element={
@@ -88,7 +104,7 @@ function AppRoutes() {
         <Route
           path="/dashboard"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute withFooter>
               <DashboardPage />
             </ProtectedRoute>
           }
@@ -96,7 +112,7 @@ function AppRoutes() {
         <Route
           path="/scripts/new"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute withFooter>
               <ScriptEditorPage />
             </ProtectedRoute>
           }
@@ -112,7 +128,7 @@ function AppRoutes() {
         <Route
           path="/scripts/:id/edit"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute withFooter>
               <ScriptEditorPage />
             </ProtectedRoute>
           }
