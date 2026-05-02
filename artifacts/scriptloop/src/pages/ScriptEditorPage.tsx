@@ -23,13 +23,17 @@ import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
 import { useDraft } from "@/hooks/useDraft";
 import {
+  ApiError,
   deleteScriptRequest,
   generateAudioRequest,
+  invalidateQuota,
+  markQuotaExhausted,
   useCreateScript,
   useScript,
   useUpdateScript,
   useVoices,
 } from "@/lib/api";
+import { AudioQuotaBadge } from "@/components/AudioQuotaBadge";
 import type { Script } from "@/db/schema";
 
 const MAX_CONTENT_LENGTH = 2000;
@@ -175,12 +179,22 @@ function CreateEditor() {
         queryClient.invalidateQueries({ queryKey: ["scripts", created.id] });
       }
 
+      invalidateQuota(queryClient);
       clearDraft();
       toast({ title: "Script created" });
       navigate(`/scripts/${created.id}`);
     } catch (e) {
       const message =
         e instanceof Error ? e.message : "Something went wrong.";
+      if (
+        e instanceof ApiError &&
+        e.status === 429 &&
+        e.retryAfterSeconds !== undefined
+      ) {
+        markQuotaExhausted(queryClient, e.retryAfterSeconds);
+      } else {
+        invalidateQuota(queryClient);
+      }
       // If audio generation failed after the script row was created, roll
       // back the half-built script so the user isn't stranded with a row
       // that has no audio (audio is locked at creation in v1).
@@ -354,6 +368,7 @@ function CreateEditor() {
       )}
 
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
+        <AudioQuotaBadge className="text-center sm:mr-auto sm:text-left" />
         <Button
           onClick={handleGenerateAndSave}
           disabled={

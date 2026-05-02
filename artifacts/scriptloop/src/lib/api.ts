@@ -1,4 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+  type QueryClient,
+} from "@tanstack/react-query";
 import type { Script } from "@/db/schema";
 
 export class ApiError extends Error {
@@ -149,6 +154,48 @@ export function useVoices() {
   });
 }
 
+export interface AudioQuota {
+  used: number;
+  limit: number;
+  resetsAt: string;
+}
+
+export const audioQuotaQueryKey = ["audio-quota"] as const;
+
+export function useAudioQuota() {
+  return useQuery({
+    queryKey: audioQuotaQueryKey,
+    queryFn: () => http<AudioQuota>("/api/audio/quota"),
+    staleTime: 30_000,
+    refetchOnWindowFocus: true,
+  });
+}
+
+/**
+ * Optimistically mark the cached quota as fully consumed for the current
+ * window. Called when the server returns 429 so the badge updates without
+ * waiting for a refetch.
+ */
+export function markQuotaExhausted(
+  qc: QueryClient,
+  retryAfterSeconds: number,
+  limit = 20,
+): void {
+  const resetsAt = new Date(
+    Date.now() + Math.max(1, retryAfterSeconds) * 1000,
+  ).toISOString();
+  qc.setQueryData<AudioQuota>(audioQuotaQueryKey, (prev) => ({
+    used: prev?.limit ?? limit,
+    limit: prev?.limit ?? limit,
+    resetsAt,
+  }));
+}
+
+/** Invalidate cached quota so the next render fetches the fresh count. */
+export function invalidateQuota(qc: QueryClient): void {
+  qc.invalidateQueries({ queryKey: audioQuotaQueryKey });
+}
+
 export interface GenerateAudioInput {
   text: string;
   voiceId: string;
@@ -182,6 +229,18 @@ export function useGenerateAudio(scriptId: number) {
         qc.setQueryData(["scripts", scriptId], data.script);
       } else {
         qc.invalidateQueries({ queryKey: ["scripts", scriptId] });
+      }
+      invalidateQuota(qc);
+    },
+    onError: (err) => {
+      if (
+        err instanceof ApiError &&
+        err.status === 429 &&
+        err.retryAfterSeconds !== undefined
+      ) {
+        markQuotaExhausted(qc, err.retryAfterSeconds);
+      } else {
+        invalidateQuota(qc);
       }
     },
   });

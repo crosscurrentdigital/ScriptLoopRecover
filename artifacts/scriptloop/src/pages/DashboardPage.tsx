@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { ScriptList } from "@/components/ScriptList";
 import { NetworkErrorState } from "@/components/NetworkErrorState";
+import { AudioQuotaBadge } from "@/components/AudioQuotaBadge";
 
 function CardSkeleton() {
   return (
@@ -80,12 +81,15 @@ export default function DashboardPage() {
                 : "Add a script to start memorizing"}
           </p>
         </div>
-        <Button asChild size="lg">
-          <Link to="/scripts/new">
-            <Plus className="h-4 w-4" />
-            New script
-          </Link>
-        </Button>
+        <div className="flex flex-col items-stretch gap-1 sm:items-end">
+          <Button asChild size="lg">
+            <Link to="/scripts/new">
+              <Plus className="h-4 w-4" />
+              New script
+            </Link>
+          </Button>
+          <AudioQuotaBadge className="px-1 sm:text-right" />
+        </div>
       </div>
 
       {isLoading && <GridSkeleton />}

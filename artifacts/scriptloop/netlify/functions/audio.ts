@@ -1,16 +1,48 @@
 import { getVoices } from "../../src/lib/elevenlabs";
 import { getSession, jsonResponse } from "./_lib/session";
 import { withSentry, captureFunctionError } from "./_lib/sentry";
-import { checkAndIncrement, rateLimitResponse } from "./_lib/rateLimit";
+import {
+  checkAndIncrement,
+  getRateLimitStatus,
+  rateLimitResponse,
+} from "./_lib/rateLimit";
 
 const MAX_TEXT_LENGTH = 2000;
 const ROUTE = "POST /api/audio/generate";
+// Must match the route name used by netlify/functions/generate-audio.ts so
+// /quota reflects the same bucket users actually spend against.
+const GENERATE_AUDIO_ROUTE = "generate-audio";
 
 const handler = async (req: Request): Promise<Response> => {
   const session = await getSession(req);
   if (!session) return jsonResponse({ error: "Unauthorized" }, 401);
 
   const url = new URL(req.url);
+
+  // GET /api/audio/quota — read-only quota for the current hour. Available
+  // even if ElevenLabs is unconfigured so the UI can still render.
+  if (url.pathname.endsWith("/quota") && req.method === "GET") {
+    try {
+      const status = await getRateLimitStatus({
+        userId: session.userId,
+        route: GENERATE_AUDIO_ROUTE,
+      });
+      return jsonResponse({
+        used: status.used,
+        limit: status.limit,
+        resetsAt: status.resetsAt.toISOString(),
+      });
+    } catch (e) {
+      captureFunctionError(e, {
+        route: "GET /api/audio/quota",
+        userId: session.userId,
+        status: 500,
+      });
+      const msg = e instanceof Error ? e.message : "Quota lookup failed";
+      return jsonResponse({ error: msg }, 500);
+    }
+  }
+
   const apiKey = process.env.ELEVENLABS_API_KEY;
   if (!apiKey)
     return jsonResponse({ error: "ElevenLabs not configured" }, 500);

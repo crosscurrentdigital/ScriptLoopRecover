@@ -1,4 +1,4 @@
-import { sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { db } from "../../../src/db/index";
 import { rateLimits } from "../../../src/db/schema";
 
@@ -9,10 +9,49 @@ export interface RateLimitResult {
   retryAfterSeconds: number;
 }
 
+export interface RateLimitStatus {
+  used: number;
+  limit: number;
+  resetsAt: Date;
+}
+
 const HOUR_MS = 60 * 60 * 1000;
 
 function bucketStart(now = Date.now()): Date {
   return new Date(Math.floor(now / HOUR_MS) * HOUR_MS);
+}
+
+/**
+ * Read-only counterpart to {@link checkAndIncrement}. Returns the current
+ * usage for this hour's bucket without mutating it. If no row exists yet
+ * for the bucket, used is 0.
+ */
+export async function getRateLimitStatus({
+  userId,
+  route,
+  limit = 20,
+}: {
+  userId: string;
+  route: string;
+  limit?: number;
+}): Promise<RateLimitStatus> {
+  const windowStart = bucketStart();
+  const [row] = await db
+    .select({ count: rateLimits.count })
+    .from(rateLimits)
+    .where(
+      and(
+        eq(rateLimits.userId, userId),
+        eq(rateLimits.route, route),
+        eq(rateLimits.windowStart, windowStart),
+      ),
+    )
+    .limit(1);
+  return {
+    used: row?.count ?? 0,
+    limit,
+    resetsAt: new Date(windowStart.getTime() + HOUR_MS),
+  };
 }
 
 /**
