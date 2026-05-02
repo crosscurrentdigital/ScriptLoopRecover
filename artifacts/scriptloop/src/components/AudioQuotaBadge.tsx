@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { useAudioQuota } from "@/lib/api";
+import { useQueryClient } from "@tanstack/react-query";
+import { invalidateQuota, useAudioQuota } from "@/lib/api";
 
 function formatResetIn(resetsAtIso: string): string {
   const ms = new Date(resetsAtIso).getTime() - Date.now();
@@ -25,15 +26,27 @@ interface AudioQuotaBadgeProps {
  */
 export function AudioQuotaBadge({ className }: AudioQuotaBadgeProps) {
   const { data, isLoading, error } = useAudioQuota();
+  const queryClient = useQueryClient();
   const [, force] = useState(0);
 
   const exhausted = data ? data.used >= data.limit : false;
 
   useEffect(() => {
-    if (!exhausted) return;
+    if (!exhausted || !data) return;
     const id = setInterval(() => force((n) => n + 1), 30_000);
-    return () => clearInterval(id);
-  }, [exhausted]);
+    // Once the bucket window passes, fetch fresh quota so the user
+    // doesn't keep staring at "resets in now" indefinitely.
+    const msUntilReset =
+      new Date(data.resetsAt).getTime() - Date.now() + 1_000;
+    const refresh = setTimeout(
+      () => invalidateQuota(queryClient),
+      Math.max(1_000, msUntilReset),
+    );
+    return () => {
+      clearInterval(id);
+      clearTimeout(refresh);
+    };
+  }, [exhausted, data, queryClient]);
 
   if (isLoading || error || !data) return null;
 
