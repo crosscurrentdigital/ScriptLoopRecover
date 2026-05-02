@@ -9,12 +9,13 @@ import {
 
 const neonAuthSchema = pgSchema("neon_auth");
 
-export const usersSync = neonAuthSchema.table("users_sync", {
-  rawId: text("raw_id").primaryKey(),
+export const authUser = neonAuthSchema.table("user", {
+  id: text("id").primaryKey(),
   name: text("name"),
   email: text("email"),
+  emailVerified: text("email_verified"),
+  image: text("image"),
   createdAt: timestamp("created_at"),
-  deletedAt: timestamp("deleted_at"),
   updatedAt: timestamp("updated_at"),
 });
 
@@ -22,7 +23,7 @@ export const scripts = pgTable("scripts", {
   id: serial("id").primaryKey(),
   userId: text("user_id")
     .notNull()
-    .references(() => usersSync.rawId, { onDelete: "cascade" }),
+    .references(() => authUser.id, { onDelete: "cascade" }),
   title: text("title").notNull(),
   content: text("content").notNull(),
   audioUrl: text("audio_url"),
