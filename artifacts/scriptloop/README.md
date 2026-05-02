@@ -197,6 +197,36 @@ chrome) and linked from the auth pages and the protected app footer.
 Update the "last updated" date in `PrivacyPage.tsx` /
 `TermsPage.tsx` whenever the policy changes.
 
+### Tests
+
+ScriptLoop ships with Vitest-based smoke, authorization, and integration
+tests under [`tests/`](./tests). Run them with:
+
+```
+pnpm --filter @workspace/scriptloop run test         # one-shot
+pnpm --filter @workspace/scriptloop run test:watch   # watch mode
+```
+
+Layout:
+
+- **`tests/api/`** — fast handler-level tests for `netlify/functions/*`
+  with the database, session, rate-limiter, and audio pipeline mocked via
+  `vi.mock`. Cover 401 on every protected route, validation (missing
+  fields, oversized content, wrong-type voiceId/text), 429 wiring, and
+  the atomic `POST /api/scripts/with-audio` happy + failure paths.
+- **`tests/integration/`** — exercises the same handlers against a real
+  in-process Postgres ([PGlite](https://pglite.dev)) wired through
+  `drizzle-orm/pglite`. Real WHERE clauses, FK constraints, and the
+  rate-limit `ON CONFLICT DO UPDATE` upsert run here, so these tests
+  would fail if a handler dropped its `userId` scope or if the limiter
+  stopped denying the 21st call in a one-hour window.
+- **`tests/app/`** — React Testing Library smoke for `RequireAuth` /
+  `PublicRoute` redirects, with `@/lib/auth-client` mocked to drive
+  `useSession` state.
+
+Only ElevenLabs and R2 are stubbed in integration tests — the database
+and rate-limit logic are real.
+
 ### Feature freeze
 
 A feature freeze is in effect at **21:00**. Any change after the freeze

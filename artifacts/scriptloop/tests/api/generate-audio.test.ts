@@ -110,6 +110,19 @@ describe("/api/generate-audio: input validation", () => {
     expect(res.status).toBe(400);
   });
 
+  it("rejects non-string voiceId (e.g. number) with 400", async () => {
+    const res = await generateAudioHandler(
+      post({ text: "hello", voiceId: 12345 }),
+    );
+    expect(res.status).toBe(400);
+    expect(audioPipelineMock.generateAndUploadAudio).not.toHaveBeenCalled();
+  });
+
+  it("rejects non-string text (e.g. number) with 400", async () => {
+    const res = await generateAudioHandler(post({ text: 42, voiceId: "v1" }));
+    expect(res.status).toBe(400);
+  });
+
   it("rejects non-POST methods with 405", async () => {
     const res = await generateAudioHandler(
       new Request("http://localhost/api/generate-audio", { method: "GET" }),

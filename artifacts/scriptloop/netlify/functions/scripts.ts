@@ -55,13 +55,30 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   if (req.method === "POST") {
-    const body = (await req.json()) as {
-      title: string;
-      content: string;
-      loopGapSeconds?: number;
+    let payload: unknown;
+    try {
+      payload = await req.json();
+    } catch {
+      return jsonResponse({ error: "Invalid JSON body" }, 400);
+    }
+    const body = (payload ?? {}) as {
+      title?: unknown;
+      content?: unknown;
+      loopGapSeconds?: unknown;
     };
 
-    if (typeof body.content === "string" && body.content.length > MAX_TEXT_LENGTH) {
+    const title = typeof body.title === "string" ? body.title.trim() : "";
+    const content = typeof body.content === "string" ? body.content : "";
+    const loopGapSeconds =
+      typeof body.loopGapSeconds === "number" &&
+      Number.isFinite(body.loopGapSeconds)
+        ? body.loopGapSeconds
+        : 2;
+
+    if (!title) return jsonResponse({ error: "title is required" }, 400);
+    if (!content.trim())
+      return jsonResponse({ error: "content is required" }, 400);
+    if (content.length > MAX_TEXT_LENGTH) {
       return jsonResponse(
         {
           error: "too_long",
@@ -75,9 +92,9 @@ const handler = async (req: Request): Promise<Response> => {
       .insert(scripts)
       .values({
         userId,
-        title: body.title,
-        content: body.content,
-        loopGapSeconds: body.loopGapSeconds ?? 2,
+        title,
+        content,
+        loopGapSeconds,
       })
       .returning();
 

@@ -36,10 +36,11 @@ pnpm workspace monorepo using TypeScript. The primary artifact is ScriptLoop —
 ## Tests
 
 Tests live in `artifacts/scriptloop/tests/`:
-- `tests/api/` — handler-level tests for `netlify/functions/*`. Drizzle's `db` is replaced with an in-memory chainable fake (`tests/helpers/dbMock.ts`); `getSession`, `checkAndIncrement`, and the audio pipeline are mocked with `vi.mock`. Covers: 401 on every protected route, cross-user 404 on scripts CRUD, `>2000`-char rejection, rate-limit 429 wiring, and the atomic `POST /api/scripts/with-audio` happy + failure paths.
-- `tests/app/` — React Testing Library smoke for `RequireAuth` / `PublicRoute` routing in a `MemoryRouter`. `@/lib/auth-client` is mocked so we can drive `useSession` state directly.
+- `tests/api/` — fast handler-level tests with `db`, `getSession`, `checkAndIncrement`, and the audio pipeline mocked via `vi.mock`. Cover 401 on every protected route, validation (missing fields, oversized content, wrong-type inputs), 429 wiring, and `POST /api/scripts/with-audio` failure paths.
+- `tests/integration/` — same handlers running against a real in-process Postgres ([PGlite](https://pglite.dev)) via `drizzle-orm/pglite`. Real WHERE clauses, FK constraints, and the rate-limit `ON CONFLICT DO UPDATE` upsert run here. Covers cross-user 404s for GET/PUT/DELETE (with row-unchanged assertions), missing-title regression, the create→fetch happy-path round-trip with audio, and the 21st-request-denied real rate-limit scenario.
+- `tests/app/` — React Testing Library smoke for `RequireAuth` / `PublicRoute` routing in a `MemoryRouter` with `@/lib/auth-client` mocked.
 
-There is intentionally **no live-DB integration test** today — spinning up a Neon branch from CI is out of scope for the current task. The handler-level tests catch regressions in auth/ownership/rate-limit wiring; a future task can add a real round-trip test against an ephemeral Neon branch.
+Only ElevenLabs and R2 are stubbed in integration tests — the database and rate-limit logic are exercised for real.
 
 ## Project Structure
 
