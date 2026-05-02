@@ -1,6 +1,6 @@
 import { db } from "../../src/db/index";
 import { scripts } from "../../src/db/schema";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 
 async function getSession(
   req: Request,
@@ -103,8 +103,17 @@ export default async (req: Request) => {
     const [updated] = await db
       .update(scripts)
       .set({ ...body, updatedAt: new Date() })
-      .where(eq(scripts.id, Number(scriptId)))
+      .where(
+        and(eq(scripts.id, Number(scriptId)), eq(scripts.userId, userId)),
+      )
       .returning();
+
+    if (!updated) {
+      return new Response(JSON.stringify({ error: "Not found" }), {
+        status: 404,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
 
     return new Response(JSON.stringify(updated), {
       status: 200,
@@ -113,7 +122,20 @@ export default async (req: Request) => {
   }
 
   if (req.method === "DELETE") {
-    await db.delete(scripts).where(eq(scripts.id, Number(scriptId)));
+    const deleted = await db
+      .delete(scripts)
+      .where(
+        and(eq(scripts.id, Number(scriptId)), eq(scripts.userId, userId)),
+      )
+      .returning({ id: scripts.id });
+
+    if (deleted.length === 0) {
+      return new Response(JSON.stringify({ error: "Not found" }), {
+        status: 404,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
     return new Response(null, { status: 204 });
   }
 

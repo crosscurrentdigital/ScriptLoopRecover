@@ -45,9 +45,9 @@ export default function DashboardPage() {
           <CardContent>
             <p className="text-sm text-muted-foreground">
               Signed in as <strong>{user?.email}</strong>.
-              User data syncs automatically to{" "}
+              User identities are stored in{" "}
               <code className="text-xs bg-muted px-1 py-0.5 rounded">
-                neon_auth.users_sync
+                neon_auth.user
               </code>
               .
             </p>
