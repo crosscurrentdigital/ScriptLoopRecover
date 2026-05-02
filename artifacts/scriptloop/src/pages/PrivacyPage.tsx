@@ -53,8 +53,17 @@ export default function PrivacyPage() {
               <strong>Generated audio.</strong> When you generate audio, we
               send your script text to ElevenLabs for text-to-speech synthesis
               and store the resulting audio file in Cloudflare R2 object
-              storage. Audio files are served from a public URL but the URL is
-              not publicly listed.
+              storage. <strong>The audio file itself is hosted at a public,
+              hard-to-guess URL</strong> (a long random-looking path under our
+              R2 bucket). The URL is not listed anywhere public, but anyone
+              who obtains it &mdash; via browser history, copy/paste, a shared
+              link, or a leaked log &mdash; can play the audio without signing
+              in. Treat the audio URL like a secret. The script <em>text</em>{" "}
+              and the link between you and the audio are kept private behind
+              your account. Regenerating audio produces a new URL{" "}
+              <em>and</em> best-effort deletes the previous R2 object at the
+              origin. Browser and CDN caches that already hold the audio may
+              keep serving it for a while, so rotation is not instantaneous.
             </li>
             <li>
               <strong>Operational logs.</strong> Server-side errors and 5xx
@@ -101,7 +110,36 @@ export default function PrivacyPage() {
             Your scripts and generated audio are kept for as long as your
             account exists. Deleting a script removes its database row and the
             associated audio reference; deleting your account removes all of
-            your scripts.
+            your scripts. Audio objects in R2 may persist briefly after the
+            referencing script is deleted (orphan cleanup is best-effort), but
+            they are no longer linked to your account.
+          </p>
+
+          <h2>Audio URL privacy posture</h2>
+          <p>
+            We deliberately chose &ldquo;public-by-design behind an
+            unguessable URL&rdquo; over signed, expiring URLs. The trade-off:
+          </p>
+          <ul>
+            <li>
+              <strong>Pro:</strong> Audio playback is fast, cacheable, and
+              works in any &lt;audio&gt; element without re-fetching tokens.
+            </li>
+            <li>
+              <strong>Con:</strong> If the URL leaks, the audio is exposed
+              until you regenerate (which rotates the URL).
+            </li>
+          </ul>
+          <p>
+            Before generating audio for the first time on a device, the app
+            asks you to acknowledge this trade-off. If you ever suspect a URL
+            has leaked, regenerate the audio from the script&rsquo;s detail
+            page &mdash; we issue a delete against the old R2 object at the
+            origin as part of the regenerate flow. Deletion is best-effort;
+            if it fails, the old URL may remain accessible. And because
+            audio is served with long public caching, browsers and CDNs that
+            already cached the file may keep serving it for some time after
+            the origin object is gone.
           </p>
 
           <h2>Your rights</h2>

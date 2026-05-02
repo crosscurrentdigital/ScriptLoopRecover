@@ -79,6 +79,66 @@ artifacts/scriptloop/
   netlify.toml
 ```
 
+## Audio privacy posture
+
+**Decision (Task 29, May 2026): public-by-design behind an unguessable URL.**
+
+Generated audio is uploaded to a Cloudflare R2 bucket whose `public-read`
+policy is enabled, and served via `R2_PUBLIC_URL/<key>` where the key is
+`audio/<userId>/<timestamp>-<nonce>-<filename>.mp3`. The `<nonce>` is a
+128-bit value from `crypto.randomUUID()` (hex, dashes stripped); the
+timestamp and userId on their own are predictable, so the nonce is what
+makes the URL hard to guess. Anyone who learns the URL can play the
+audio without signing in.
+
+**Why not signed, expiring URLs?** Signed URLs would require: disabling
+public-read on the bucket, server-side signing on every `GET /api/scripts/:id`,
+client-side URL-refresh-on-expiry inside `<audio>` (which doesn't natively
+support token rotation mid-playback), and reworking the looping audio
+hook. For a hobby/indie tool with 2000-char scripts and rate-limited
+generation, the implementation/maintenance cost was judged higher than the
+incremental privacy gain. We may revisit if the threat model changes.
+
+**Enforcement (don't drift from this):**
+
+- `src/lib/r2-server.ts` and `netlify/functions/storage.ts` set an
+  explicit `Cache-Control: public, max-age=31536000, immutable` on every
+  PUT — public caching is intentional and the comment links back here.
+- `src/components/AudioPrivacyConsent.tsx` is shown in
+  `ScriptEditorPage` (create) and `ScriptDetailPage` (regenerate). The
+  Generate button is disabled until the user acknowledges the posture
+  once per device (persisted in localStorage as
+  `scriptloop:audio-privacy-ack:v1`).
+- `PrivacyPage.tsx` and `TermsPage.tsx` describe the posture in plain
+  language — keep them in sync if this decision ever changes.
+- Sentry (both `netlify/functions/_lib/sentry.ts` and `src/lib/sentry.ts`)
+  scrubs strings matching the R2 audio URL shape from events and
+  breadcrumbs before send, so leaked URLs don't end up in error reports.
+- Plausible Analytics is cookie-less and we do not emit any custom events
+  containing audio URLs (only automatic pageviews).
+- **URL rotation / leaked-URL revocation:** there is no separate "rotate"
+  endpoint by design. Regenerating audio for an existing script (POST
+  `/api/generate-audio` with a `scriptId`) writes a new R2 key (timestamp
+  in the path), updates `scripts.audioUrl`, **and best-effort deletes the
+  previous R2 object** via `deleteObjectByPublicUrl` so a leaked old URL
+  stops working. The deletion is best-effort: if R2 is unreachable the
+  request still succeeds (the user got their new audio) and the failure
+  is captured to Sentry. `POST /api/scripts/with-audio` (initial create)
+  has no previous URL to delete. Telling users to "regenerate to rotate"
+  is therefore literally true at the origin — the old object is actively
+  removed, not just forgotten. **Caveat:** because uploads use
+  `Cache-Control: public, max-age=31536000, immutable`, browsers and CDNs
+  that already cached a leaked URL may keep serving it after the origin
+  object is gone. Rotation is therefore not instantaneous; the privacy
+  copy is worded to reflect this. If practical revocation latency ever
+  matters more than playback caching, shorten `max-age` here and in
+  storage.ts.
+
+If a future task switches to signed URLs, all of the above needs to flip
+together (bucket policy off public-read, signing helper, client refresh,
+copy in privacy/terms, consent component removed, cache-control to
+`private`).
+
 ## Required Environment Variables
 
 ```

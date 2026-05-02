@@ -75,6 +75,20 @@ export default function TermsPage() {
             (including sending the text to ElevenLabs for synthesis and
             storing the resulting audio in Cloudflare R2).
           </p>
+          <p>
+            <strong>Audio storage notice.</strong> Generated audio files are
+            stored at a public, hard-to-guess URL on Cloudflare R2. Anyone who
+            obtains the URL can play the audio without signing in. We ask you
+            to acknowledge this in-app before your first generation, and we
+            recommend you only generate audio for content you are comfortable
+            having world-readable at an unguessable URL. You can rotate the
+            URL at any time by regenerating the audio from the script&rsquo;s
+            detail page. See the{" "}
+            <Link to="/privacy" className="underline underline-offset-2">
+              Privacy Policy
+            </Link>{" "}
+            for details.
+          </p>
 
           <h2>Third-party services</h2>
           <p>

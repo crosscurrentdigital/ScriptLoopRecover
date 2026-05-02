@@ -27,15 +27,29 @@ const handler = async (req: Request): Promise<Response> => {
   if (!parsed.ok) return parsed.response;
   const { fileName, contentType } = parsed.data;
 
-  const key = `audio/${session.userId}/${Date.now()}-${fileName}`;
+  // 128-bit random nonce is the unguessability primitive (see
+  // `replit.md` → Audio privacy posture). Keep this key shape in sync
+  // with audioPipeline.ts and the client sentry URL scrubber.
+  const nonce = crypto.randomUUID().replace(/-/g, "");
+  const key = `audio/${session.userId}/${Date.now()}-${nonce}-${fileName}`;
 
   const command = new PutObjectCommand({
     Bucket: process.env.R2_BUCKET_NAME,
     Key: key,
     ContentType: contentType,
+    // Match the public-by-design privacy posture (see `replit.md` → Audio
+    // privacy posture). Keys are unique per upload so the bytes at a given
+    // URL never change; long-lived public caching is safe and explicit.
+    CacheControl: "public, max-age=31536000, immutable",
   });
 
-  const uploadUrl = await getSignedUrl(s3, command, { expiresIn: 300 });
+  const uploadUrl = await getSignedUrl(s3, command, {
+    expiresIn: 300,
+    // The client must echo this header on the PUT or the signature
+    // will not validate. Keep these in sync with the upload helper in
+    // `src/lib/r2.ts`.
+    unhoistableHeaders: new Set(["cache-control"]),
+  });
   const publicUrl = `${process.env.R2_PUBLIC_URL}/${key}`;
 
   return new Response(JSON.stringify({ uploadUrl, publicUrl, key }), {

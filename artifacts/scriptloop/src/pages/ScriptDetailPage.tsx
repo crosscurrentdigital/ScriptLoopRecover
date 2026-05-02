@@ -18,6 +18,10 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { AudioPlayer } from "@/components/AudioPlayer";
+import {
+  AudioPrivacyConsent,
+  hasAudioPrivacyAck,
+} from "@/components/AudioPrivacyConsent";
 import { NetworkErrorState } from "@/components/NetworkErrorState";
 import { ProgressiveText } from "@/components/ProgressiveText";
 import {
@@ -51,6 +55,9 @@ export default function ScriptDetailPage() {
   );
 
   const [selectedVoiceId, setSelectedVoiceId] = useState<string>("");
+  const [audioPrivacyAck, setAudioPrivacyAck] = useState<boolean>(
+    () => hasAudioPrivacyAck(),
+  );
   useEffect(() => {
     // Reset to the loaded script's voice whenever the script id changes,
     // so navigating directly between scripts doesn't carry over the
@@ -73,6 +80,15 @@ export default function ScriptDetailPage() {
       toast({ title: "Pick a voice first", variant: "destructive" });
       return;
     }
+    if (!audioPrivacyAck) {
+      toast({
+        title: "Confirm audio privacy first",
+        description:
+          "Please acknowledge that generated audio is hosted at a public, hard-to-guess URL.",
+        variant: "destructive",
+      });
+      return;
+    }
     try {
       await generateAudio.mutateAsync({
         text: script.content,
@@ -91,7 +107,7 @@ export default function ScriptDetailPage() {
         variant: "destructive",
       });
     }
-  }, [scriptId, script, selectedVoiceId, generateAudio, toast]);
+  }, [scriptId, script, selectedVoiceId, audioPrivacyAck, generateAudio, toast]);
 
   const handleDelete = async () => {
     if (!scriptId || !script) return;
@@ -246,6 +262,7 @@ export default function ScriptDetailPage() {
                 </Select>
               )}
             </div>
+            <AudioPrivacyConsent onChange={setAudioPrivacyAck} />
             <div className="flex flex-wrap items-center gap-2">
               <Button
                 onClick={handleRegenerate}
@@ -253,7 +270,8 @@ export default function ScriptDetailPage() {
                   generateAudio.isPending ||
                   voicesLoading ||
                   !!voicesError ||
-                  !script.content?.trim()
+                  !script.content?.trim() ||
+                  !audioPrivacyAck
                 }
               >
                 {generateAudio.isPending

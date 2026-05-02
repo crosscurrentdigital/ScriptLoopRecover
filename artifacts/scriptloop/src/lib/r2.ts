@@ -36,7 +36,12 @@ export async function uploadToR2(
 
   const uploadResponse = await fetch(uploadUrl, {
     method: "PUT",
-    headers: { "Content-Type": "contentType" },
+    headers: {
+      "Content-Type": contentType,
+      // Must match the CacheControl baked into the presigned PUT
+      // (see netlify/functions/storage.ts) or the signature won't validate.
+      "Cache-Control": "public, max-age=31536000, immutable",
+    },
     body: file,
   });
 

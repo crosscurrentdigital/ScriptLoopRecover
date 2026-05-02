@@ -10,6 +10,7 @@ import {
   checkAudioConfig,
   generateAndUploadAudio,
 } from "./_lib/audioPipeline";
+import { deleteObjectByPublicUrl } from "../../src/lib/r2-server";
 import {
   errorResponse,
   generateAudioSchema,
@@ -44,10 +45,15 @@ const handler = async (req: Request): Promise<Response> => {
   if (!limitResult.allowed) return rateLimitResponse(limitResult);
 
   // Pre-flight ownership check: refuse to spend ElevenLabs credits on a
-  // script the caller doesn't own (or that doesn't exist).
+  // script the caller doesn't own (or that doesn't exist). Capture the
+  // previous audioUrl so we can delete the old R2 object after a
+  // successful regenerate (real leaked-URL rotation, not just a DB update
+  // — see `replit.md` → Audio privacy posture).
+  let previousAudioUrl: string | null = null;
   if (scriptId !== null) {
     const owned = await getScriptForUser(scriptId, session.userId);
     if (!owned) return errorResponse(404, "not_found", "Script not found.");
+    previousAudioUrl = owned.audioUrl ?? null;
   }
 
   let generated;
@@ -91,6 +97,23 @@ const handler = async (req: Request): Promise<Response> => {
     }
     if (!script) {
       return errorResponse(404, "not_found", "Script not found.");
+    }
+
+    // Best-effort revoke: now that the script row points at the new R2
+    // object, delete the previous one so a leaked old URL stops working.
+    // Failures are logged to Sentry but do not fail the request — the
+    // user already got their new audio and the worst case is one orphan
+    // object whose URL was already exposed.
+    if (previousAudioUrl && previousAudioUrl !== generated.publicUrl) {
+      try {
+        await deleteObjectByPublicUrl(previousAudioUrl);
+      } catch (e) {
+        captureFunctionError(e, {
+          route: ROUTE,
+          userId: session.userId,
+          status: 200,
+        });
+      }
     }
   }
 

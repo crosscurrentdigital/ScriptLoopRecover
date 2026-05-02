@@ -28,6 +28,10 @@ import {
   useVoices,
 } from "@/lib/api";
 import { AudioQuotaBadge } from "@/components/AudioQuotaBadge";
+import {
+  AudioPrivacyConsent,
+  hasAudioPrivacyAck,
+} from "@/components/AudioPrivacyConsent";
 import type { Script } from "@/db/schema";
 
 const MAX_CONTENT_LENGTH = 2000;
@@ -114,6 +118,9 @@ function CreateEditor() {
     isFetching: voicesFetching,
   } = useVoices();
   const createWithAudio = useCreateScriptWithAudio();
+  const [audioPrivacyAck, setAudioPrivacyAck] = useState<boolean>(
+    () => hasAudioPrivacyAck(),
+  );
 
   const { draft, setDraft, clearDraft } = useDraft<DraftShape>({
     key: "new",
@@ -144,6 +151,15 @@ function CreateEditor() {
     }
     if (!draft.voiceId) {
       toast({ title: "Pick a voice first", variant: "destructive" });
+      return;
+    }
+    if (!audioPrivacyAck) {
+      toast({
+        title: "Confirm audio privacy first",
+        description:
+          "Please acknowledge that generated audio is hosted at a public, hard-to-guess URL.",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -315,12 +331,16 @@ function CreateEditor() {
         </Card>
       )}
 
+      <AudioPrivacyConsent onChange={setAudioPrivacyAck} />
+
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
         <AudioQuotaBadge className="text-center sm:mr-auto sm:text-left" />
         <Button
           onClick={handleGenerateAndSave}
           disabled={
-            isSubmitting || draft.content.length > MAX_CONTENT_LENGTH
+            isSubmitting ||
+            draft.content.length > MAX_CONTENT_LENGTH ||
+            !audioPrivacyAck
           }
           size="lg"
           className="w-full sm:w-auto"

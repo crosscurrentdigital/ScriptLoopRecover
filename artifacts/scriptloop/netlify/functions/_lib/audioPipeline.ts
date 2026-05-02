@@ -133,7 +133,13 @@ export async function generateAndUploadAudio(args: {
   }
 
   const audioBytes = new Uint8Array(audioBuffer);
-  const key = `audio/${args.userId}/${Date.now()}-generated.mp3`;
+  // Key shape: `audio/<userId>/<timestamp>-<random>-generated.mp3`. The
+  // 128-bit random nonce is the unguessability primitive — the timestamp
+  // and userId are predictable on their own, so without the nonce one
+  // leaked URL would let an attacker probe nearby keys for the same user
+  // (see `replit.md` → Audio privacy posture).
+  const nonce = crypto.randomUUID().replace(/-/g, "");
+  const key = `audio/${args.userId}/${Date.now()}-${nonce}-generated.mp3`;
 
   let publicUrl: string;
   try {
