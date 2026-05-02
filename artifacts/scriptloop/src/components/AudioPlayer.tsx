@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Pause, Play, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,6 +17,7 @@ export interface AudioPlayerProps {
   gapSeconds?: number;
   defaultLooping?: boolean;
   onLoopComplete?: (loopNumber: number) => void;
+  onRegenerate?: () => void;
 }
 
 const STANDARD_GAPS = [0, 2, 5, 10] as const;
@@ -35,6 +36,7 @@ export function AudioPlayer({
   gapSeconds,
   defaultLooping = false,
   onLoopComplete,
+  onRegenerate,
 }: AudioPlayerProps) {
   const url = audioUrl ?? src ?? "";
 
@@ -53,17 +55,62 @@ export function AudioPlayer({
     onLoopComplete,
   });
 
+  const [loadError, setLoadError] = useState(false);
+
   const didAutoStart = useRef(false);
   useEffect(() => {
     didAutoStart.current = false;
+    setLoadError(false);
   }, [url]);
+
   useEffect(() => {
     if (!defaultLooping || didAutoStart.current || !url) return;
     didAutoStart.current = true;
     play();
   }, [defaultLooping, url, play]);
 
+  // Attach a native <audio> error listener so we can show a friendly
+  // fallback when the file fails to load (404, decode error, network).
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    const handleError = () => setLoadError(true);
+    audio.addEventListener("error", handleError);
+    return () => audio.removeEventListener("error", handleError);
+  }, [audioRef, url]);
+
   const options = buildGapOptions(gap);
+
+  if (loadError) {
+    return (
+      <div className="space-y-2 rounded-md border border-destructive/50 bg-destructive/5 p-3">
+        <p className="text-sm text-destructive">
+          Audio failed to load — try regenerating.
+        </p>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              setLoadError(false);
+              const audio = audioRef.current;
+              if (audio) {
+                audio.load();
+                play();
+              }
+            }}
+          >
+            Try again
+          </Button>
+          {onRegenerate && (
+            <Button size="sm" variant="default" onClick={onRegenerate}>
+              Regenerate
+            </Button>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-3 rounded-md border p-3">

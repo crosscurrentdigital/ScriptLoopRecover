@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom";
+
 export function Footer() {
   return (
     <footer className="border-t bg-background">
@@ -6,19 +8,19 @@ export function Footer() {
           aria-label="Legal and contact"
           className="flex flex-wrap items-center justify-center gap-x-1 gap-y-1"
         >
-          <a
-            href="/privacy"
+          <Link
+            to="/privacy"
             className="inline-flex min-h-9 items-center px-1 hover:text-foreground hover:underline"
           >
             Privacy Policy
-          </a>
+          </Link>
           <span aria-hidden="true">·</span>
-          <a
-            href="/terms"
+          <Link
+            to="/terms"
             className="inline-flex min-h-9 items-center px-1 hover:text-foreground hover:underline"
           >
             Terms of Service
-          </a>
+          </Link>
           <span aria-hidden="true">·</span>
           <a
             href="mailto:hello@scriptloop.app"

@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { AudioPlayer } from "@/components/AudioPlayer";
+import { NetworkErrorState } from "@/components/NetworkErrorState";
 import { ProgressiveText } from "@/components/ProgressiveText";
 import {
   useDeleteScript,
@@ -60,31 +61,30 @@ export default function ScriptDetailPage() {
     );
   }
 
-  if (error || !script) {
+  if (error) {
+    return (
+      <main className="container mx-auto max-w-3xl px-4 py-10 space-y-3">
+        <NetworkErrorState
+          title="Couldn't load this script"
+          message={error.message}
+          onRetry={() => refetch()}
+          isRetrying={isFetching}
+        />
+        <Button asChild variant="ghost" size="sm">
+          <Link to="/dashboard">Back to dashboard</Link>
+        </Button>
+      </main>
+    );
+  }
+
+  if (!script) {
     return (
       <main className="container mx-auto max-w-3xl px-4 py-10">
         <Card className="border-destructive">
           <CardHeader>
-            <CardTitle className="text-base">
-              {error ? "Couldn't load script" : "Script not found"}
-            </CardTitle>
-            {error && (
-              <CardDescription className="text-destructive">
-                {error.message}
-              </CardDescription>
-            )}
+            <CardTitle className="text-base">Script not found</CardTitle>
           </CardHeader>
-          <CardContent className="flex flex-wrap gap-2">
-            {error && (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => refetch()}
-                disabled={isFetching}
-              >
-                {isFetching ? "Retrying…" : "Try again"}
-              </Button>
-            )}
+          <CardContent>
             <Button asChild variant="ghost" size="sm">
               <Link to="/dashboard">Back to dashboard</Link>
             </Button>

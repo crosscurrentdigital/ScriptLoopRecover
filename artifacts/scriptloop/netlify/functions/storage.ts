@@ -1,5 +1,7 @@
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { getSession } from "./_lib/session";
+import { withSentry } from "./_lib/sentry";
 
 const s3 = new S3Client({
   region: "auto",
@@ -10,26 +12,7 @@ const s3 = new S3Client({
   },
 });
 
-async function getSession(
-  req: Request,
-): Promise<{ userId: string } | null> {
-  const neonAuthUrl = process.env.VITE_NEON_AUTH_URL;
-  if (!neonAuthUrl) return null;
-  try {
-    const res = await fetch(`${neonAuthUrl}/api/auth/get-session`, {
-      headers: { cookie: req.headers.get("cookie") ?? "" },
-    });
-    if (!res.ok) return null;
-    const data = (await res.json()) as {
-      session?: { userId?: string };
-    };
-    return data?.session?.userId ? { userId: data.session.userId } : null;
-  } catch {
-    return null;
-  }
-}
-
-export default async (req: Request) => {
+const handler = async (req: Request): Promise<Response> => {
   if (req.method !== "POST") {
     return new Response(JSON.stringify({ error: "Method not allowed" }), {
       status: 405,
@@ -66,6 +49,8 @@ export default async (req: Request) => {
     headers: { "Content-Type": "application/json" },
   });
 };
+
+export default withSentry("/api/storage/presign", handler);
 
 export const config = {
   path: "/api/storage/presign",

@@ -32,6 +32,8 @@ import {
 } from "@/lib/api";
 import type { Script } from "@/db/schema";
 
+const MAX_CONTENT_LENGTH = 2000;
+
 interface DraftShape {
   title: string;
   content: string;
@@ -136,6 +138,14 @@ function CreateEditor() {
       toast({ title: "Script content is empty", variant: "destructive" });
       return;
     }
+    if (draft.content.length > MAX_CONTENT_LENGTH) {
+      toast({
+        title: "Script is too long",
+        description: `Scripts are limited to ${MAX_CONTENT_LENGTH} characters.`,
+        variant: "destructive",
+      });
+      return;
+    }
     if (!draft.voiceId) {
       toast({ title: "Pick a voice first", variant: "destructive" });
       return;
@@ -220,15 +230,38 @@ function CreateEditor() {
           id="content"
           value={draft.content}
           onChange={(e) =>
-            setDraft((d) => ({ ...d, content: e.target.value }))
+            setDraft((d) => ({
+              ...d,
+              content: e.target.value.slice(0, MAX_CONTENT_LENGTH),
+            }))
           }
+          maxLength={MAX_CONTENT_LENGTH}
           placeholder="Paste your script here…"
           className="min-h-[300px] font-mono text-base sm:text-sm"
           disabled={isSubmitting}
         />
-        <p className="text-xs text-muted-foreground">
-          {draft.content.length} characters · drafts auto-save to this device
-        </p>
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-xs text-muted-foreground">
+            Drafts auto-save to this device
+          </p>
+          <p
+            className={`text-xs tabular-nums ${
+              draft.content.length >= MAX_CONTENT_LENGTH
+                ? "text-destructive font-medium"
+                : draft.content.length >= MAX_CONTENT_LENGTH - 200
+                  ? "text-amber-600 dark:text-amber-400"
+                  : "text-muted-foreground"
+            }`}
+          >
+            {draft.content.length} / {MAX_CONTENT_LENGTH}
+          </p>
+        </div>
+        {draft.content.length >= MAX_CONTENT_LENGTH && (
+          <p className="text-xs text-destructive">
+            You've reached the {MAX_CONTENT_LENGTH}-character limit. Trim your
+            script to continue.
+          </p>
+        )}
       </div>
 
       <Card>
@@ -305,8 +338,17 @@ function CreateEditor() {
 
       {submitError && (
         <Card className="border-destructive">
-          <CardContent className="pt-6">
-            <p className="text-sm text-destructive">{submitError}</p>
+          <CardContent className="pt-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <p className="text-sm text-destructive flex-1">{submitError}</p>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleGenerateAndSave}
+              disabled={isSubmitting}
+              className="shrink-0"
+            >
+              Retry
+            </Button>
           </CardContent>
         </Card>
       )}
@@ -314,7 +356,9 @@ function CreateEditor() {
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
         <Button
           onClick={handleGenerateAndSave}
-          disabled={isSubmitting}
+          disabled={
+            isSubmitting || draft.content.length > MAX_CONTENT_LENGTH
+          }
           size="lg"
           className="w-full sm:w-auto"
         >
@@ -372,6 +416,14 @@ function EditExistingEditor({ script }: { script: Script }) {
       toast({ title: "Title is required", variant: "destructive" });
       return;
     }
+    if (draft.content.length > MAX_CONTENT_LENGTH) {
+      toast({
+        title: "Script is too long",
+        description: `Scripts are limited to ${MAX_CONTENT_LENGTH} characters.`,
+        variant: "destructive",
+      });
+      return;
+    }
     try {
       await updateScript.mutateAsync({
         title: draft.title.trim(),
@@ -383,6 +435,11 @@ function EditExistingEditor({ script }: { script: Script }) {
     } catch (e) {
       const message = e instanceof Error ? e.message : "Save failed";
       setSubmitError(message);
+      toast({
+        title: "Couldn't save",
+        description: message,
+        variant: "destructive",
+      });
     }
   };
 
@@ -399,7 +456,13 @@ function EditExistingEditor({ script }: { script: Script }) {
           <Button asChild variant="ghost" size="sm">
             <Link to={`/scripts/${script.id}`}>Cancel</Link>
           </Button>
-          <Button onClick={handleSave} disabled={updateScript.isPending}>
+          <Button
+            onClick={handleSave}
+            disabled={
+              updateScript.isPending ||
+              draft.content.length > MAX_CONTENT_LENGTH
+            }
+          >
             {updateScript.isPending ? "Saving…" : "Save"}
           </Button>
         </div>
@@ -433,13 +496,41 @@ function EditExistingEditor({ script }: { script: Script }) {
         <Textarea
           id="content"
           value={draft.content}
-          onChange={(e) => setDraft((d) => ({ ...d, content: e.target.value }))}
+          onChange={(e) =>
+            setDraft((d) => ({
+              ...d,
+              content: e.target.value.slice(0, MAX_CONTENT_LENGTH),
+            }))
+          }
+          maxLength={MAX_CONTENT_LENGTH}
           placeholder="Paste your script here…"
           className="min-h-[300px] font-mono text-base sm:text-sm"
         />
-        <p className="text-xs text-muted-foreground">
-          {draft.content.length} characters · drafts auto-save to this device
-        </p>
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-xs text-muted-foreground">
+            Drafts auto-save to this device
+          </p>
+          <p
+            className={`text-xs tabular-nums ${
+              draft.content.length >= MAX_CONTENT_LENGTH
+                ? "text-destructive font-medium"
+                : draft.content.length >= MAX_CONTENT_LENGTH - 200
+                  ? "text-amber-600 dark:text-amber-400"
+                  : "text-muted-foreground"
+            }`}
+          >
+            {draft.content.length} / {MAX_CONTENT_LENGTH}
+          </p>
+        </div>
+        {draft.content.length >= MAX_CONTENT_LENGTH && (
+          <p className="text-xs text-destructive">
+            You've reached the {MAX_CONTENT_LENGTH}-character limit. Trim your
+            script to continue.
+          </p>
+        )}
+        {submitError && (
+          <p className="text-xs text-destructive">{submitError}</p>
+        )}
       </div>
 
       <Card>

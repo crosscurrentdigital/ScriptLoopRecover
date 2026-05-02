@@ -2,6 +2,7 @@ import { Component, type ErrorInfo, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { SentrySDK } from "@/lib/sentry";
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -20,6 +21,13 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
   componentDidCatch(error: Error, info: ErrorInfo): void {
     console.error("Route error boundary caught:", error, info);
+    try {
+      SentrySDK.captureException(error, {
+        contexts: { react: { componentStack: info.componentStack } },
+      });
+    } catch {
+      /* ignore Sentry failures */
+    }
   }
 
   handleReset = () => {

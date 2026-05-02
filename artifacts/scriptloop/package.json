@@ -17,6 +17,8 @@
     "@aws-sdk/s3-request-presigner": "^3.787.0",
     "@neondatabase/auth": "0.3.0-beta",
     "@neondatabase/serverless": "^0.10.4",
+    "@sentry/node": "^10.51.0",
+    "@sentry/react": "^10.51.0",
     "@tanstack/react-query": "catalog:",
     "drizzle-orm": "catalog:",
     "react": "catalog:",

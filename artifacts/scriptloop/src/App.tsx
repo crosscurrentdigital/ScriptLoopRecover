@@ -11,9 +11,12 @@ import ScriptDetailPage from "@/pages/ScriptDetailPage";
 import ZenMode from "@/pages/ZenMode";
 import NotFoundPage from "@/pages/NotFoundPage";
 import Landing from "@/pages/Landing";
+import PrivacyPage from "@/pages/PrivacyPage";
+import TermsPage from "@/pages/TermsPage";
 import { AppHeader } from "@/components/AppHeader";
 import { Footer } from "@/components/Footer";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { SentryTestTrigger } from "@/components/SentryTestTrigger";
 
 const queryClient = new QueryClient();
 
@@ -85,6 +88,8 @@ function AppRoutes() {
             </PublicRoute>
           }
         />
+        <Route path="/privacy" element={<PrivacyPage />} />
+        <Route path="/terms" element={<TermsPage />} />
         <Route
           path="/sign-in"
           element={
@@ -143,6 +148,7 @@ function AppRoutes() {
         />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
+      <SentryTestTrigger />
       <Toaster />
     </NeonAuthUIProvider>
   );

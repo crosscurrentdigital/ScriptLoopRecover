@@ -1,6 +1,22 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Script } from "@/db/schema";
 
+export class ApiError extends Error {
+  status: number;
+  code?: string;
+  retryAfterSeconds?: number;
+  constructor(
+    message: string,
+    opts: { status: number; code?: string; retryAfterSeconds?: number },
+  ) {
+    super(message);
+    this.name = "ApiError";
+    this.status = opts.status;
+    this.code = opts.code;
+    this.retryAfterSeconds = opts.retryAfterSeconds;
+  }
+}
+
 async function http<T>(
   input: RequestInfo | URL,
   init?: RequestInit,
@@ -14,14 +30,34 @@ async function http<T>(
     },
   });
   if (!res.ok) {
-    let message = res.statusText;
+    let message = res.statusText || `HTTP ${res.status}`;
+    let code: string | undefined;
+    let retryAfterSeconds: number | undefined;
     try {
       const body = await res.json();
-      if (body?.error) message = body.error;
+      // Prefer the structured `message` (user-friendly) over the machine
+      // `error` code so toasts read nicely.
+      if (typeof body?.message === "string") message = body.message;
+      else if (typeof body?.error === "string") message = body.error;
+      if (typeof body?.error === "string") code = body.error;
+      if (typeof body?.retryAfterSeconds === "number") {
+        retryAfterSeconds = body.retryAfterSeconds;
+      }
     } catch {
-      // ignore
+      // ignore — keep statusText
     }
-    throw new Error(message || `HTTP ${res.status}`);
+    if (retryAfterSeconds === undefined) {
+      const header = res.headers.get("Retry-After");
+      if (header) {
+        const parsed = Number(header);
+        if (Number.isFinite(parsed)) retryAfterSeconds = parsed;
+      }
+    }
+    throw new ApiError(message, {
+      status: res.status,
+      code,
+      retryAfterSeconds,
+    });
   }
   if (res.status === 204) return undefined as T;
   return (await res.json()) as T;

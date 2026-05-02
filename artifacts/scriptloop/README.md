@@ -12,6 +12,8 @@ Production memorization tool. Loop your scripts, memorize with audio.
 - Cloudflare R2 (audio storage)
 - ElevenLabs (text-to-speech)
 - Netlify (hosting + serverless functions)
+- Sentry (error tracking, optional)
+- Plausible Analytics (cookie-less analytics, optional)
 
 ## Local Development
 
@@ -41,16 +43,19 @@ Production memorization tool. Loop your scripts, memorize with audio.
 
 ## Environment Variables
 
-| Variable | Description |
-|----------|-------------|
-| `DATABASE_URL` | Neon PostgreSQL connection string |
-| `VITE_NEON_AUTH_URL` | Neon Auth URL from Console → Auth → Configuration |
-| `ELEVENLABS_API_KEY` | ElevenLabs API key |
-| `R2_ACCOUNT_ID` | Cloudflare account ID |
-| `R2_ACCESS_KEY_ID` | R2 S3-compatible access key |
-| `R2_SECRET_ACCESS_KEY` | R2 secret key |
-| `R2_BUCKET_NAME` | R2 bucket name (default: `scriptloop`) |
-| `R2_PUBLIC_URL` | R2 public URL (e.g. `https://pub-xxx.r2.dev`) |
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `DATABASE_URL` | yes | Neon PostgreSQL connection string |
+| `VITE_NEON_AUTH_URL` | yes | Neon Auth URL from Console → Auth → Configuration |
+| `ELEVENLABS_API_KEY` | yes | ElevenLabs API key |
+| `R2_ACCOUNT_ID` | yes | Cloudflare account ID |
+| `R2_ACCESS_KEY_ID` | yes | R2 S3-compatible access key |
+| `R2_SECRET_ACCESS_KEY` | yes | R2 secret key |
+| `R2_BUCKET_NAME` | yes | R2 bucket name (default: `scriptloop`) |
+| `R2_PUBLIC_URL` | yes | R2 public URL (e.g. `https://pub-xxx.r2.dev`) |
+| `VITE_SENTRY_DSN` | no | Sentry DSN for the React app. Code no-ops if missing. Safe to expose publicly. |
+| `SENTRY_DSN` | no | Sentry DSN for the Netlify functions. Can be the same value as `VITE_SENTRY_DSN` (one project) or a separate Node project's DSN. |
+| `VITE_PLAUSIBLE_DOMAIN` | no | Plausible domain (e.g. `scriptloop.app`). Plausible script is only injected in production builds. |
 
 ## Deploy to Netlify
 
@@ -66,6 +71,102 @@ npm run db:migrate    # apply migrations
 
 > Note: The `neon_auth` schema (users_sync table) is managed by Neon Auth automatically — do not include it in migrations.
 
+## Production Hardening (Phase 8)
+
+### Rate limiting
+
+Audio generation is limited to **20 requests per user per hour** at the
+serverless-function layer. Counters live in the `rate_limits` table (per-user,
+per-route, hourly bucket) and are atomically incremented via Postgres
+`ON CONFLICT`, so concurrent function invocations stay correct.
+
+When the limit is exceeded the API returns:
+
+```http
+HTTP/1.1 429 Too Many Requests
+Retry-After: <seconds>
+Content-Type: application/json
+
+{
+  "error": "rate_limited",
+  "message": "You've hit the hourly limit of 20 audio generations…",
+  "retryAfterSeconds": 1234,
+  "limit": 20
+}
+```
+
+The frontend's `ApiError` parses both the JSON body and the `Retry-After`
+header, so toasts can show a friendly message.
+
+To **manually reset** a user's hourly window during testing:
+
+```sql
+DELETE FROM rate_limits WHERE user_id = '<user-id>';
+```
+
+### Character limits (defense in depth)
+
+Scripts are capped at **2,000 characters** at three layers:
+
+1. The `<textarea>` enforces `maxLength={2000}` and shows a live
+   `n / 2000` counter (red at the limit).
+2. The Save / Generate buttons are disabled when over the limit.
+3. The Netlify functions (`/api/scripts` POST/PUT and
+   `/api/generate-audio`) re-validate and return a structured 400:
+   ```json
+   { "error": "too_long", "message": "Scripts are limited to 2000 characters." }
+   ```
+
+### Error tracking — Sentry
+
+- **Frontend** (`@sentry/react`): initialised in `src/main.tsx` from
+  `VITE_SENTRY_DSN`. The `ErrorBoundary` reports React errors to Sentry
+  with their component stack.
+- **Backend** (`@sentry/node`): every Netlify function is wrapped with
+  `withSentry(route, handler)` (see `netlify/functions/_lib/sentry.ts`),
+  which captures thrown errors and any 5xx responses. ElevenLabs / R2
+  failures explicitly call `captureFunctionError`.
+- Both DSNs are no-op if unset — Sentry stays disabled in dev unless you
+  opt in.
+
+**Verify in production:**
+
+1. Visit `/dashboard?sentry-test=1` and click the floating "Throw test
+   error" button → the boundary renders and a new issue appears in
+   Sentry within ~30s.
+2. Hit a function with a deliberately bad payload that causes a 500
+   (e.g. wrong R2 creds in a staging env) → Sentry receives it tagged
+   `route=/api/generate-audio`.
+
+### Analytics — Plausible
+
+Plausible is loaded **at runtime** from `src/lib/plausible.ts`, gated on
+`import.meta.env.PROD && VITE_PLAUSIBLE_DOMAIN`. This keeps dev sessions
+out of analytics and avoids shipping the script when the domain isn't
+configured. Plausible's default script auto-tracks SPA route changes —
+no per-route hook is needed.
+
+### Empty / error states
+
+- `<NetworkErrorState>` is reused across the dashboard and detail page
+  for "couldn't load" failures, with a Try-again button.
+- The audio player has an `onError` fallback panel ("Audio failed to
+  load — try regenerating") with a Try-again button.
+- The script editor surfaces inline errors and a Retry button on the
+  submit error card.
+
+### Legal pages
+
+`/privacy` and `/terms` are public routes (rendered without the app
+chrome) and linked from the auth pages and the protected app footer.
+Update the "last updated" date in `PrivacyPage.tsx` /
+`TermsPage.tsx` whenever the policy changes.
+
+### Feature freeze
+
+A feature freeze is in effect at **21:00**. Any change after the freeze
+should be a blocker fix only.
+
 ## Project Structure
 
 ```
@@ -74,16 +175,34 @@ src/
     auth-client.ts  - Neon Auth browser client (createAuthClient)
     elevenlabs.ts   - ElevenLabs client
     r2.ts           - R2 upload helper
+    sentry.ts       - Browser Sentry init (env-gated)
+    plausible.ts    - Runtime Plausible script injection (prod-only)
+    api.ts          - React Query hooks + ApiError
   db/
-    schema.ts       - Drizzle schema (references neon_auth.users_sync + scripts table)
+    schema.ts       - Drizzle schema (scripts, rate_limits, users_sync ref)
     index.ts        - Neon connection
   pages/
-    LoginPage.tsx   - Sign-in via AuthView
-    RegisterPage.tsx - Sign-up via AuthView
+    LoginPage.tsx
+    RegisterPage.tsx
     DashboardPage.tsx
-  components/ui/    - shadcn/ui components
+    ScriptEditorPage.tsx
+    ScriptDetailPage.tsx
+    PrivacyPage.tsx
+    TermsPage.tsx
+  components/
+    ui/                  - shadcn/ui components
+    AudioPlayer.tsx      - <audio> with loop + error fallback
+    NetworkErrorState.tsx
+    Footer.tsx
+    SentryTestTrigger.tsx (only renders with ?sentry-test=1)
 netlify/
   functions/
-    scripts.ts      - Scripts CRUD (/api/scripts/*)
-    storage.ts      - R2 presign (/api/storage/presign)
+    _lib/
+      session.ts        - getSession + jsonResponse helpers
+      sentry.ts         - withSentry wrapper + captureFunctionError
+      rateLimit.ts      - checkAndIncrement + 429 Response builder
+    scripts.ts          - Scripts CRUD (/api/scripts/*)
+    generate-audio.ts   - ElevenLabs + R2 + DB attach (rate-limited)
+    audio.ts            - /api/audio/voices, /api/audio/generate guard
+    storage.ts          - R2 presign (/api/storage/presign)
 ```

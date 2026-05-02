@@ -3,14 +3,15 @@ import { useState } from "react";
 import { Plus } from "lucide-react";
 import { useScripts, useDeleteScript } from "@/lib/api";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { ScriptList } from "@/components/ScriptList";
+import { NetworkErrorState } from "@/components/NetworkErrorState";
 
 function CardSkeleton() {
   return (
-    <Card className="flex flex-col">
+    <Card className="flex flex-col gap-0">
       <div className="flex flex-col space-y-3 p-6 pb-3">
         <div className="flex items-start justify-between gap-2">
           <Skeleton className="h-5 w-3/4" />
@@ -90,21 +91,12 @@ export default function DashboardPage() {
       {isLoading && <GridSkeleton />}
 
       {error && (
-        <Card className="border-destructive">
-          <CardContent className="pt-6 flex flex-wrap items-center justify-between gap-3">
-            <p className="text-sm text-destructive">
-              Failed to load scripts: {error.message}
-            </p>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => refetch()}
-              disabled={isFetching}
-            >
-              {isFetching ? "Retrying…" : "Try again"}
-            </Button>
-          </CardContent>
-        </Card>
+        <NetworkErrorState
+          title="Couldn't load your scripts"
+          message={error.message}
+          onRetry={() => refetch()}
+          isRetrying={isFetching}
+        />
       )}
 
       {!isLoading && !error && scripts && (

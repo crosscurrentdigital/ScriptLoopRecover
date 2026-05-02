@@ -38,3 +38,15 @@ export const scripts = pgTable("scripts", {
 
 export type Script = typeof scripts.$inferSelect;
 export type InsertScript = typeof scripts.$inferInsert;
+
+export const rateLimits = pgTable("rate_limits", {
+  id: serial("id").primaryKey(),
+  userId: uuid("user_id").notNull(),
+  route: text("route").notNull(),
+  windowStart: timestamp("window_start", { withTimezone: true }).notNull(),
+  count: integer("count").notNull().default(0),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+});
+
+export type RateLimit = typeof rateLimits.$inferSelect;

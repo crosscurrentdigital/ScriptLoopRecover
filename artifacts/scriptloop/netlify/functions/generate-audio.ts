@@ -4,36 +4,14 @@ import {
   attachAudioToScript,
   getScriptForUser,
 } from "../../src/lib/scripts-server";
+import { getSession, jsonResponse } from "./_lib/session";
+import { withSentry, captureFunctionError } from "./_lib/sentry";
+import { checkAndIncrement, rateLimitResponse } from "./_lib/rateLimit";
 
 const MAX_TEXT_LENGTH = 2000;
 const DEFAULT_BITRATE_BPS = 128_000;
 const WORDS_PER_SECOND_FALLBACK = 2.5;
-
-async function getSession(
-  req: Request,
-): Promise<{ userId: string } | null> {
-  const neonAuthUrl = process.env.VITE_NEON_AUTH_URL;
-  if (!neonAuthUrl) return null;
-  try {
-    const res = await fetch(`${neonAuthUrl}/api/auth/get-session`, {
-      headers: { cookie: req.headers.get("cookie") ?? "" },
-    });
-    if (!res.ok) return null;
-    const data = (await res.json()) as {
-      session?: { userId?: string };
-    };
-    return data?.session?.userId ? { userId: data.session.userId } : null;
-  } catch {
-    return null;
-  }
-}
-
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { "Content-Type": "application/json" },
-  });
-}
+const ROUTE = "POST /api/generate-audio";
 
 const MPEG_BITRATE_TABLE: Record<string, (number | null)[]> = {
   "1-1": [
@@ -99,17 +77,17 @@ function estimateDurationSeconds(
   return Math.round(Math.max(fallback, 0.1) * 10) / 10;
 }
 
-export default async (req: Request): Promise<Response> => {
+const handler = async (req: Request): Promise<Response> => {
   if (req.method !== "POST") {
-    return json({ error: "Method not allowed" }, 405);
+    return jsonResponse({ error: "Method not allowed" }, 405);
   }
 
   const session = await getSession(req);
-  if (!session) return json({ error: "Unauthorized" }, 401);
+  if (!session) return jsonResponse({ error: "Unauthorized" }, 401);
 
   const apiKey = process.env.ELEVENLABS_API_KEY;
   if (!apiKey) {
-    return json({ error: "ElevenLabs is not configured" }, 500);
+    return jsonResponse({ error: "ElevenLabs is not configured" }, 500);
   }
 
   const missingR2 = [
@@ -120,7 +98,7 @@ export default async (req: Request): Promise<Response> => {
     "R2_PUBLIC_URL",
   ].filter((name) => !process.env[name]);
   if (missingR2.length > 0) {
-    return json(
+    return jsonResponse(
       {
         error: `R2 storage is not configured: missing ${missingR2.join(", ")}`,
       },
@@ -132,7 +110,7 @@ export default async (req: Request): Promise<Response> => {
   try {
     payload = await req.json();
   } catch {
-    return json({ error: "Invalid JSON body" }, 400);
+    return jsonResponse({ error: "Invalid JSON body" }, 400);
   }
 
   const body = payload as {
@@ -148,31 +126,48 @@ export default async (req: Request): Promise<Response> => {
       : null;
 
   if (!text.trim()) {
-    return json({ error: "text is required" }, 400);
+    return jsonResponse({ error: "text is required" }, 400);
   }
   if (text.length > MAX_TEXT_LENGTH) {
-    return json(
-      { error: `text exceeds maximum length of ${MAX_TEXT_LENGTH} characters` },
+    return jsonResponse(
+      {
+        error: "too_long",
+        message: `Scripts are limited to ${MAX_TEXT_LENGTH} characters.`,
+      },
       400,
     );
   }
   if (!voiceId.trim()) {
-    return json({ error: "voiceId is required" }, 400);
+    return jsonResponse({ error: "voiceId is required" }, 400);
   }
+
+  // Per-user, per-hour rate limit (defends against runaway loops and
+  // limits ElevenLabs spend). Checked AFTER input validation but BEFORE we
+  // touch any third-party APIs.
+  const limitResult = await checkAndIncrement({
+    userId: session.userId,
+    route: "generate-audio",
+  });
+  if (!limitResult.allowed) return rateLimitResponse(limitResult);
 
   // Pre-flight ownership check: refuse to spend ElevenLabs credits on a
   // script the caller doesn't own (or that doesn't exist).
   if (scriptId !== null) {
     const owned = await getScriptForUser(scriptId, session.userId);
-    if (!owned) return json({ error: "Script not found" }, 404);
+    if (!owned) return jsonResponse({ error: "Script not found" }, 404);
   }
 
   let audioBuffer: ArrayBuffer;
   try {
     audioBuffer = await textToSpeech(apiKey, { text, voiceId });
   } catch (e) {
+    captureFunctionError(e, {
+      route: ROUTE,
+      userId: session.userId,
+      status: 502,
+    });
     const msg = e instanceof Error ? e.message : "Text-to-speech failed";
-    return json({ error: msg }, 502);
+    return jsonResponse({ error: msg }, 502);
   }
 
   const audioBytes = new Uint8Array(audioBuffer);
@@ -183,8 +178,13 @@ export default async (req: Request): Promise<Response> => {
     const result = await uploadBufferToR2(audioBytes, key, "audio/mpeg");
     publicUrl = result.publicUrl;
   } catch (e) {
+    captureFunctionError(e, {
+      route: ROUTE,
+      userId: session.userId,
+      status: 502,
+    });
     const msg = e instanceof Error ? e.message : "R2 upload failed";
-    return json({ error: msg }, 502);
+    return jsonResponse({ error: msg }, 502);
   }
 
   const durationSeconds = estimateDurationSeconds(audioBytes, text);
@@ -200,16 +200,23 @@ export default async (req: Request): Promise<Response> => {
         audioSource: "elevenlabs",
       });
     } catch (e) {
+      captureFunctionError(e, {
+        route: ROUTE,
+        userId: session.userId,
+        status: 500,
+      });
       const msg = e instanceof Error ? e.message : "Failed to save audio link";
-      return json({ error: msg }, 500);
+      return jsonResponse({ error: msg }, 500);
     }
     if (!script) {
-      return json({ error: "Script not found" }, 404);
+      return jsonResponse({ error: "Script not found" }, 404);
     }
   }
 
-  return json({ audioUrl: publicUrl, durationSeconds, script });
+  return jsonResponse({ audioUrl: publicUrl, durationSeconds, script });
 };
+
+export default withSentry(ROUTE, handler);
 
 export const config = {
   path: "/api/generate-audio",

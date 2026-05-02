@@ -1,27 +1,12 @@
 import { db } from "../../src/db/index";
 import { scripts } from "../../src/db/schema";
 import { and, eq } from "drizzle-orm";
+import { getSession } from "./_lib/session";
+import { withSentry } from "./_lib/sentry";
 
-async function getSession(
-  req: Request,
-): Promise<{ userId: string } | null> {
-  const neonAuthUrl = process.env.VITE_NEON_AUTH_URL;
-  if (!neonAuthUrl) return null;
-  try {
-    const res = await fetch(`${neonAuthUrl}/api/auth/get-session`, {
-      headers: { cookie: req.headers.get("cookie") ?? "" },
-    });
-    if (!res.ok) return null;
-    const data = (await res.json()) as {
-      session?: { userId?: string };
-    };
-    return data?.session?.userId ? { userId: data.session.userId } : null;
-  } catch {
-    return null;
-  }
-}
+const MAX_TEXT_LENGTH = 2000;
 
-export default async (req: Request) => {
+const handler = async (req: Request): Promise<Response> => {
   const session = await getSession(req);
 
   if (!session) {
@@ -74,6 +59,16 @@ export default async (req: Request) => {
       loopGapSeconds?: number;
     };
 
+    if (typeof body.content === "string" && body.content.length > MAX_TEXT_LENGTH) {
+      return new Response(
+        JSON.stringify({
+          error: "too_long",
+          message: `Scripts are limited to ${MAX_TEXT_LENGTH} characters.`,
+        }),
+        { status: 400, headers: { "Content-Type": "application/json" } },
+      );
+    }
+
     const [newScript] = await db
       .insert(scripts)
       .values({
@@ -99,6 +94,16 @@ export default async (req: Request) => {
       voiceId: string;
       loopGapSeconds: number;
     }>;
+
+    if (typeof body.content === "string" && body.content.length > MAX_TEXT_LENGTH) {
+      return new Response(
+        JSON.stringify({
+          error: "too_long",
+          message: `Scripts are limited to ${MAX_TEXT_LENGTH} characters.`,
+        }),
+        { status: 400, headers: { "Content-Type": "application/json" } },
+      );
+    }
 
     const [updated] = await db
       .update(scripts)
@@ -144,6 +149,8 @@ export default async (req: Request) => {
     headers: { "Content-Type": "application/json" },
   });
 };
+
+export default withSentry("/api/scripts/*", handler);
 
 export const config = {
   path: "/api/scripts/*",
