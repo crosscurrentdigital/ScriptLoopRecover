@@ -490,6 +490,14 @@ function EditExistingEditor({ script }: { script: Script }) {
                   className="w-full"
                 />
               </div>
+              <div className="pt-1">
+                <Link
+                  to={`/scripts/${script.id}/zen`}
+                  className="text-xs text-primary underline-offset-2 hover:underline"
+                >
+                  Enter Zen Mode →
+                </Link>
+              </div>
             </div>
           )}
         </CardContent>

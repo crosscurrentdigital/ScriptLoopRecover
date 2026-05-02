@@ -103,6 +103,11 @@ export default function ScriptDetailPage() {
           )}
         </div>
         <div className="flex items-center gap-2 shrink-0">
+          {script.audioUrl && (
+            <Button asChild variant="default" size="sm">
+              <Link to={`/scripts/${script.id}/zen`}>Enter Zen Mode</Link>
+            </Button>
+          )}
           <Button asChild variant="outline" size="sm">
             <Link to={`/scripts/${script.id}/edit`}>Edit</Link>
           </Button>

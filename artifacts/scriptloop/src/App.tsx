@@ -8,6 +8,7 @@ import RegisterPage from "@/pages/RegisterPage";
 import DashboardPage from "@/pages/DashboardPage";
 import ScriptEditorPage from "@/pages/ScriptEditorPage";
 import ScriptDetailPage from "@/pages/ScriptDetailPage";
+import ZenMode from "@/pages/ZenMode";
 import NotFoundPage from "@/pages/NotFoundPage";
 import { AppHeader } from "@/components/AppHeader";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -22,18 +23,31 @@ function Spinner() {
   );
 }
 
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
+function RequireAuth({ children }: { children: React.ReactNode }) {
   const session = authClient.useSession();
-
   if (session.isPending) return <Spinner />;
   if (!session.data) return <Navigate to="/sign-in" replace />;
+  return <>{children}</>;
+}
+
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return (
-    <ErrorBoundary>
-      <div className="min-h-screen bg-background flex flex-col">
-        <AppHeader />
-        <div className="flex-1">{children}</div>
-      </div>
-    </ErrorBoundary>
+    <RequireAuth>
+      <ErrorBoundary>
+        <div className="min-h-screen bg-background flex flex-col">
+          <AppHeader />
+          <div className="flex-1">{children}</div>
+        </div>
+      </ErrorBoundary>
+    </RequireAuth>
+  );
+}
+
+function BareProtectedRoute({ children }: { children: React.ReactNode }) {
+  return (
+    <RequireAuth>
+      <ErrorBoundary>{children}</ErrorBoundary>
+    </RequireAuth>
   );
 }
 
@@ -101,6 +115,14 @@ function AppRoutes() {
             <ProtectedRoute>
               <ScriptEditorPage />
             </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/scripts/:id/zen"
+          element={
+            <BareProtectedRoute>
+              <ZenMode />
+            </BareProtectedRoute>
           }
         />
         <Route path="*" element={<NotFoundPage />} />
