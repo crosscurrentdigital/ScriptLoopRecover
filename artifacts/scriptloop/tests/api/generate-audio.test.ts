@@ -92,8 +92,11 @@ describe("/api/generate-audio: input validation", () => {
       post({ text: "x".repeat(2001), voiceId: "v1" }),
     );
     expect(res.status).toBe(400);
-    const body = (await res.json()) as { error: string };
-    expect(body.error).toBe("too_long");
+    const body = (await res.json()) as {
+      error: { code: string; message: string };
+    };
+    expect(body.error.code).toBe("invalid_request");
+    expect(body.error.message).toMatch(/2000/);
     expect(audioPipelineMock.generateAndUploadAudio).not.toHaveBeenCalled();
   });
 
@@ -175,8 +178,11 @@ describe("/api/generate-audio: TTS / upload errors", () => {
       post({ text: "hi", voiceId: "v1" }),
     );
     expect(res.status).toBe(502);
-    const body = (await res.json()) as { error: string };
-    expect(body.error).toBe("boom");
+    const body = (await res.json()) as {
+      error: { code: string; message: string };
+    };
+    expect(body.error.code).toBe("upstream_error");
+    expect(body.error.message).toBe("boom");
   });
 
   it("returns 500 when ElevenLabs/R2 are not configured", async () => {

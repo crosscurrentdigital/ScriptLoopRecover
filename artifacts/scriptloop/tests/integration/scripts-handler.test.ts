@@ -178,8 +178,16 @@ describe("integration: required-field validation on POST /api/scripts", () => {
       }),
     );
     expect(res.status).toBe(400);
-    const body = (await res.json()) as { error: string };
-    expect(body.error).toBe("title is required");
+    const body = (await res.json()) as {
+      error: {
+        code: string;
+        details: Array<{ path: string; message: string }>;
+      };
+    };
+    expect(body.error.code).toBe("invalid_request");
+    expect(body.error.details).toEqual(
+      expect.arrayContaining([expect.objectContaining({ path: "title" })]),
+    );
 
     const rows = await testClient.query(`SELECT * FROM scripts`);
     expect(rows.rows).toHaveLength(0);
@@ -203,8 +211,16 @@ describe("integration: required-field validation on POST /api/scripts", () => {
       }),
     );
     expect(res.status).toBe(400);
-    const body = (await res.json()) as { error: string };
-    expect(body.error).toBe("content is required");
+    const body = (await res.json()) as {
+      error: {
+        code: string;
+        details: Array<{ path: string; message: string }>;
+      };
+    };
+    expect(body.error.code).toBe("invalid_request");
+    expect(body.error.details).toEqual(
+      expect.arrayContaining([expect.objectContaining({ path: "content" })]),
+    );
   });
 
   it("rejects malformed JSON body with 400", async () => {
@@ -348,9 +364,16 @@ describe("integration: real per-user hourly rate limit (21st request denied) on 
       }),
     );
     expect(denied.status).toBe(429);
-    const body = (await denied.json()) as { error: string; limit: number };
-    expect(body.error).toBe("rate_limited");
-    expect(body.limit).toBe(20);
+    const body = (await denied.json()) as {
+      error: {
+        code: string;
+        message: string;
+        retryAfterSeconds: number;
+        details: { limit: number };
+      };
+    };
+    expect(body.error.code).toBe("rate_limited");
+    expect(body.error.details.limit).toBe(20);
     expect(denied.headers.get("Retry-After")).toBeTruthy();
 
     // The denied call must NOT have generated audio or inserted a row.

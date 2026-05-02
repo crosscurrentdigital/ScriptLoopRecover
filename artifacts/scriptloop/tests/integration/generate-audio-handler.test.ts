@@ -92,9 +92,16 @@ describe("integration: real hourly limit on /api/generate-audio", () => {
       }),
     );
     expect(denied.status).toBe(429);
-    const body = (await denied.json()) as { error: string; limit: number };
-    expect(body.error).toBe("rate_limited");
-    expect(body.limit).toBe(20);
+    const body = (await denied.json()) as {
+      error: {
+        code: string;
+        message: string;
+        retryAfterSeconds: number;
+        details: { limit: number };
+      };
+    };
+    expect(body.error.code).toBe("rate_limited");
+    expect(body.error.details.limit).toBe(20);
     expect(denied.headers.get("Retry-After")).toBeTruthy();
 
     expect(

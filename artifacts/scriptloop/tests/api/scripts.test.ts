@@ -91,8 +91,11 @@ describe("input validation", () => {
       }),
     );
     expect(res.status).toBe(400);
-    const body = (await res.json()) as { error: string };
-    expect(body.error).toBe("too_long");
+    const body = (await res.json()) as {
+      error: { code: string; message: string };
+    };
+    expect(body.error.code).toBe("invalid_request");
+    expect(body.error.message).toMatch(/2000/);
     expect(dbState.insertCalls).toHaveLength(0);
   });
 
