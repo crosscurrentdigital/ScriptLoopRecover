@@ -40,7 +40,7 @@ Tests live in `artifacts/scriptloop/tests/`:
 - `tests/integration/` — same handlers running against a real in-process Postgres ([PGlite](https://pglite.dev)) via `drizzle-orm/pglite`. Real WHERE clauses, FK constraints, and the rate-limit `ON CONFLICT DO UPDATE` upsert run here. Covers cross-user 404s for GET/PUT/DELETE (with row-unchanged assertions), missing-title regression, the create→fetch happy-path round-trip with audio, and the 21st-request-denied real rate-limit scenario.
 - `tests/app/` — React Testing Library smoke for `RequireAuth` / `PublicRoute` routing in a `MemoryRouter` with `@/lib/auth-client` mocked.
 
-Only ElevenLabs and R2 are stubbed in integration tests — the database and rate-limit logic are exercised for real.
+In integration tests, ElevenLabs, R2, and `getSession` are stubbed; the database, SQL queries, and rate-limit upserts run for real against PGlite.
 
 ## Project Structure
 

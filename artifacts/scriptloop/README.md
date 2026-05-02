@@ -224,8 +224,8 @@ Layout:
   `PublicRoute` redirects, with `@/lib/auth-client` mocked to drive
   `useSession` state.
 
-Only ElevenLabs and R2 are stubbed in integration tests — the database
-and rate-limit logic are real.
+In integration tests, ElevenLabs, R2, and `getSession` are stubbed; the
+database, SQL queries, and rate-limit upserts run for real against PGlite.
 
 ### Feature freeze
 
