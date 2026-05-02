@@ -1,8 +1,13 @@
 uploads = []
-outputs = []
 
 [[generated]]
 id = "bSL3TF5mKecVEmr2ecuW9"
 uri = "file://artifacts/scriptloop/public/og-image.png"
 type = "image"
 title = "scriptloop og banner"
+
+[[outputs]]
+id = "G5uLRy3MrkN41-UmeZ9LJ"
+uri = "file://.local/submissions/buildathon-description.md"
+type = "text"
+title = "ScriptLoop — Buildathon Submission Description"
