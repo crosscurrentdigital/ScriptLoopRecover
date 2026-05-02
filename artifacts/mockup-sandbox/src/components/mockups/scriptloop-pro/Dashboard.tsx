@@ -1,3 +1,4 @@
+import type React from 'react';
 import './_group.css';
 import { 
   Play, Plus, MoreVertical, Search, Settings, 
@@ -65,7 +66,7 @@ function Sidebar() {
           <span className="font-mono text-[10px] text-muted-foreground uppercase">Audio Quota</span>
           <span className="font-mono text-[10px] text-foreground">84%</span>
         </div>
-        <Progress value={84} className="h-1 rounded-none bg-secondary" indicatorClassName="bg-primary" />
+        <Progress value={84} className="h-1 rounded-none bg-secondary [&>*]:bg-primary" />
         <div className="mt-4 flex items-center gap-3">
           <div className="w-8 h-8 bg-secondary flex items-center justify-center font-mono text-xs border border-border">
             US
@@ -81,7 +82,7 @@ function Sidebar() {
   );
 }
 
-function NavItem({ icon: Icon, label, active }: { icon?: any, label: string, active?: boolean }) {
+function NavItem({ icon: Icon, label, active }: { icon?: React.ComponentType<{ className?: string }>, label: string, active?: boolean }) {
   return (
     <button className={`w-full flex items-center gap-3 px-2 py-1.5 text-xs font-mono rounded-none transition-colors ${active ? 'bg-secondary text-primary' : 'text-muted-foreground hover:bg-secondary/50 hover:text-foreground'}`}>
       {Icon ? <Icon className="w-4 h-4" /> : <span className="w-4 h-4 text-center opacity-50">#</span>}
