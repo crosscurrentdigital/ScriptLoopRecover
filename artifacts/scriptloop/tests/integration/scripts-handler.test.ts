@@ -1,10 +1,7 @@
-/**
- * Integration tests exercising netlify/functions/scripts.ts against a real
- * PGlite (in-process Postgres) via drizzle's pglite adapter. Real WHERE
- * clauses, FK constraints, and SQL coercion run here — these tests would
- * fail if a handler dropped its `userId` scope from a query, unlike the
- * mock-driven tests in tests/api/.
- */
+// Integration tests for netlify/functions/scripts.ts against PGlite
+// (in-process Postgres). For mutations the handlers scope by userId in
+// SQL; GET-by-id selects by id and then enforces ownership in JS, which
+// is functionally equivalent for these assertions.
 import {
   afterAll,
   beforeAll,
@@ -80,7 +77,7 @@ afterAll(async () => {
 });
 
 describe("integration: real-DB authorization on /api/scripts/:id", () => {
-  it("user A cannot read user B's script (real WHERE filter, returns 404)", async () => {
+  it("user A cannot read user B's script (handler enforces ownership, returns 404)", async () => {
     // Seed a row owned by USER_B.
     await testClient.query(
       `INSERT INTO scripts (user_id, title, content) VALUES ($1, $2, $3) RETURNING id`,
@@ -100,7 +97,7 @@ describe("integration: real-DB authorization on /api/scripts/:id", () => {
     expect(res.status).toBe(404);
   });
 
-  it("user A cannot UPDATE user B's script (real WHERE, returns 404, row unchanged)", async () => {
+  it("user A cannot UPDATE user B's script (WHERE id AND user_id, returns 404, row unchanged)", async () => {
     const inserted = await testClient.query<{ id: number }>(
       `INSERT INTO scripts (user_id, title, content) VALUES ($1, $2, $3) RETURNING id`,
       [USER_B, "Bob's title", "Bob's content"],
@@ -123,7 +120,7 @@ describe("integration: real-DB authorization on /api/scripts/:id", () => {
     expect(after.rows[0]!.title).toBe("Bob's title");
   });
 
-  it("user A cannot DELETE user B's script (real WHERE, returns 404, row still present)", async () => {
+  it("user A cannot DELETE user B's script (WHERE id AND user_id, returns 404, row still present)", async () => {
     const inserted = await testClient.query<{ id: number }>(
       `INSERT INTO scripts (user_id, title, content) VALUES ($1, $2, $3) RETURNING id`,
       [USER_B, "Bob delete-target", "still here"],
@@ -145,7 +142,7 @@ describe("integration: real-DB authorization on /api/scripts/:id", () => {
     expect(after.rows).toHaveLength(1);
   });
 
-  it("GET /api/scripts only returns the caller's rows (real WHERE)", async () => {
+  it("GET /api/scripts only returns the caller's rows (WHERE user_id)", async () => {
     await testClient.query(
       `INSERT INTO scripts (user_id, title, content) VALUES ($1,$2,$3),($1,$4,$5),($6,$7,$8)`,
       [

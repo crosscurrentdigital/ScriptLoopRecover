@@ -45,6 +45,8 @@ vi.mock("../../netlify/functions/_lib/audioPipeline", () => audioPipelineMock);
 const generateAudioHandler = (
   await import("../../netlify/functions/generate-audio")
 ).default;
+const scriptsHandler = (await import("../../netlify/functions/scripts"))
+  .default;
 
 const USER_A = "11111111-1111-1111-1111-111111111111";
 
@@ -108,4 +110,56 @@ describe("integration: real hourly limit on /api/generate-audio", () => {
     expect(rl.rows).toHaveLength(1);
     expect(rl.rows[0]).toEqual({ count: 21, n: 1 });
   }, 30_000);
+
+  it("attaches audio to a script: POST /api/scripts -> POST /api/generate-audio -> GET /api/scripts/:id has audioUrl", async () => {
+    audioPipelineMock.generateAndUploadAudio.mockResolvedValueOnce({
+      audioBytes: new Uint8Array([9, 9, 9]),
+      publicUrl: "https://r2.example.com/audio/alice/attach.mp3",
+      durationSeconds: 1.25,
+    });
+
+    const created = await scriptsHandler(
+      new Request("http://localhost/api/scripts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: "My take", content: "Hello world" }),
+      }),
+    );
+    expect(created.status).toBe(201);
+    const createdBody = (await created.json()) as { id: number };
+    const scriptId = createdBody.id;
+    expect(typeof scriptId).toBe("number");
+
+    const gen = await generateAudioHandler(
+      new Request("http://localhost/api/generate-audio", {
+        method: "POST",
+        body: JSON.stringify({
+          text: "Hello world",
+          voiceId: "v1",
+          scriptId,
+        }),
+      }),
+    );
+    expect(gen.status).toBe(200);
+    const genBody = (await gen.json()) as {
+      audioUrl: string;
+      script: { id: number; audioUrl: string } | null;
+    };
+    expect(genBody.audioUrl).toBe("https://r2.example.com/audio/alice/attach.mp3");
+    expect(genBody.script?.id).toBe(scriptId);
+    expect(genBody.script?.audioUrl).toBe(
+      "https://r2.example.com/audio/alice/attach.mp3",
+    );
+
+    const fetched = await scriptsHandler(
+      new Request(`http://localhost/api/scripts/${scriptId}`, {
+        method: "GET",
+      }),
+    );
+    expect(fetched.status).toBe(200);
+    const fetchedBody = (await fetched.json()) as { audioUrl: string };
+    expect(fetchedBody.audioUrl).toBe(
+      "https://r2.example.com/audio/alice/attach.mp3",
+    );
+  });
 });
