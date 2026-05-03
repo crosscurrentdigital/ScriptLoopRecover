@@ -4,7 +4,7 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "vite dev",
+    "dev": "pkill -9 -f '[a]rtifacts/mockup-sandbox/node_modules/.*vite' 2>/dev/null; sleep 0.5; vite dev",
     "build": "vite build",
     "preview": "vite preview",
     "typecheck": "tsc -p tsconfig.json --noEmit"
