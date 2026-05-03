@@ -199,30 +199,72 @@ Update the "last updated" date in `PrivacyPage.tsx` /
 
 ### Tests
 
-ScriptLoop ships with Vitest-based smoke, authorization, and integration
-tests under [`tests/`](./tests). Run them with:
+ScriptLoop ships with a full Vitest test suite under [`tests/`](./tests).
+The suite covers serverless functions and routes, services and shared
+libs, React hooks, components, and pages. Run it with:
 
 ```
-pnpm --filter @workspace/scriptloop run test         # one-shot
-pnpm --filter @workspace/scriptloop run test:watch   # watch mode
+pnpm --filter @workspace/scriptloop run test                 # one-shot
+pnpm --filter @workspace/scriptloop run test:watch           # watch mode
+pnpm --filter @workspace/scriptloop run test --coverage      # with coverage
 ```
+
+Coverage is enforced **globally** at **80% statements / branches /
+functions / lines** (see `vitest.config.ts` `thresholds`). The check is
+applied to the aggregated total across all included sources, not to
+each folder or file individually — some pages with heavy UI branching
+sit below 80% locally while the aggregate stays well above the gate
+(currently ~88%). Generated UI primitives (`src/components/ui/*`) and
+non-product wiring (`main.tsx`, `db/index.ts`, hook utilities) are
+excluded from the coverage scope.
+
+### End-to-end (Playwright)
+
+The full user journey — register → create script → generate audio →
+Zen Mode loop → progressive hiding → delete — lives in
+[`tests/e2e/journey.spec.ts`](./tests/e2e/journey.spec.ts) and runs via
+Playwright. All external services (Neon Auth, ElevenLabs, R2, the
+Netlify functions) are stubbed with `page.route()` so the suite is
+fully hermetic.
+
+```
+pnpm --filter @workspace/scriptloop run dev          # in another terminal
+pnpm --filter @workspace/scriptloop exec playwright install chromium
+pnpm --filter @workspace/scriptloop run test:e2e
+```
+
+The first run requires a one-time `playwright install` to download the
+Chromium binary. Set `PLAYWRIGHT_BASE_URL` or `BASE_PATH` to point at a
+non-default dev server.
 
 Layout:
 
-- **`tests/api/`** — fast handler-level tests for `netlify/functions/*`
-  with the database, session, rate-limiter, and audio pipeline mocked via
-  `vi.mock`. Cover 401 on every protected route, validation (missing
-  fields, oversized content, wrong-type voiceId/text), 429 wiring, and
-  the atomic `POST /api/scripts/with-audio` happy + failure paths.
+- **`tests/api/`** — fast handler-level tests for every route in
+  `netlify/functions/*` (`scripts`, `generate-audio`, `audio`, `storage`,
+  `cleanup-rate-limits`, `auth`, `with-audio`, `sentry-scrub`) with the
+  database, session, rate-limiter, and audio pipeline mocked via
+  `vi.mock`. Cover 401 on every protected route, validation, 429 wiring,
+  and the atomic `POST /api/scripts/with-audio` happy + failure paths.
 - **`tests/integration/`** — exercises the same handlers against a real
   in-process Postgres ([PGlite](https://pglite.dev)) wired through
   `drizzle-orm/pglite`. Real WHERE clauses, FK constraints, and the
-  rate-limit `ON CONFLICT DO UPDATE` upsert run here, so these tests
-  would fail if a handler dropped its `userId` scope or if the limiter
-  stopped denying the 21st call in a one-hour window.
+  rate-limit `ON CONFLICT DO UPDATE` upsert run here.
+- **`tests/lib/`** — unit tests for every service in `src/lib/*`
+  (`api`, `elevenlabs`, `r2`, `r2-server`, `plausible`, `sentry`,
+  `scripts-server`, `utils`) plus the `_lib/*` helpers
+  (`audioPipeline`, `session`, `sentry`).
+- **`tests/hooks/`** — React Testing Library + `renderHook` for
+  `useDraft`, `useLoopedAudio`, and `useWordHiding`.
+- **`tests/components/`** — React Testing Library tests for every
+  product component (`AppHeader`, `Footer`, `AudioPlayer`,
+  `AudioQuotaBadge`, `AudioPrivacyConsent`, `ErrorBoundary`,
+  `NetworkErrorState`, `ProgressiveText`, `ScriptCard`, `ScriptList`,
+  `SentryTestTrigger`, `ZenControls`).
+- **`tests/pages/`** — page-level tests for `Landing`, `Login`,
+  `Register`, `Privacy`, `Terms`, `NotFound`, `Dashboard`,
+  `ScriptDetail`, `ScriptEditor`, and `ZenMode`.
 - **`tests/app/`** — React Testing Library smoke for `RequireAuth` /
-  `PublicRoute` redirects, with `@/lib/auth-client` mocked to drive
-  `useSession` state.
+  `PublicRoute` redirects and top-level routing.
 
 In integration tests, ElevenLabs, R2, and `getSession` are stubbed; the
 database, SQL queries, and rate-limit upserts run for real against PGlite.
