@@ -1,0 +1,75 @@
+Add a "Reading Preferences" settings page to ScriptLoop that lets 
+users personalize how memorization text is displayed. This is based 
+on research showing that font, color, and spacing personalization 
+significantly improves reading comprehension and retention.
+
+CREATE a new settings page accessible from the main nav, with these 
+controls:
+
+1. FONT FAMILY (dropdown or visual picker)
+   Options:
+   - Atkinson Hyperlegible (default)
+   - Georgia
+   - Roboto
+   - Lato
+   - Verdana
+   - Lexend
+   - OpenDyslexic
+   - Comic Sans MS
+   
+   Each option should preview in its own font in the picker.
+   Load free fonts from Google Fonts where available. 
+   OpenDyslexic loads from opendyslexic.org or a CDN.
+
+2. BACKGROUND COLOR (swatch picker)
+   Options with hex values:
+   - White (#FFFFFF)
+   - Cream (#FBF6E9) — default
+   - Pale Yellow (#FFF9C4)
+   - Pale Blue (#E3F2FD)
+   - Pale Pink (#FCE4EC)
+   - Sepia (#F4ECD8)
+   - Dark Gray (#1A1A1A)
+
+3. TEXT COLOR (swatch picker, auto-suggests based on background)
+   Options:
+   - Black (#000000)
+   - Dark Gray (#2C2C2C) — default
+   - Dark Brown (#3E2723)
+   - Off-White (#F5F5F5) — for dark backgrounds
+
+4. LETTER SPACING (slider)
+   Range: 0px to 4px, default 0px, step 0.5px
+   Apply via CSS letter-spacing
+
+5. LINE HEIGHT (slider)
+   Range: 1.2 to 2.4, default 1.6, step 0.1
+   Apply via CSS line-height
+
+6. FONT SIZE (slider)
+   Range: 14px to 28px, default 18px, step 1px
+
+REQUIREMENTS:
+- All preferences persist per user (localStorage minimum, database 
+  if user accounts exist)
+- LIVE PREVIEW area on the settings page showing a sample verse 
+  (e.g., John 3:16) that updates instantly as settings change
+- Apply preferences globally to all memorization/reading views, 
+  not just settings page
+- "Reset to defaults" button
+- Mobile-responsive layout
+- Each setting has a small info icon (ⓘ) with a one-sentence 
+  explanation of why it helps (e.g., "Cream backgrounds reduce 
+  glare and visual stress for many readers")
+
+ACCESSIBILITY:
+- Full keyboard navigation
+- ARIA labels on all controls
+- Focus indicators visible on all backgrounds (test the dark mode 
+  combination especially)
+
+Bonus if simple: a "Quick Themes" row at top with 3 presets:
+- "Default" (Atkinson Hyperlegible / Cream / Dark Gray)
+- "Dyslexia-Friendly" (OpenDyslexic / Pale Yellow / Dark Gray, 
+  +1px letter spacing, 1.8 line height)
+- "Night Reading" (Atkinson Hyperlegible / Dark Gray / Off-White)
