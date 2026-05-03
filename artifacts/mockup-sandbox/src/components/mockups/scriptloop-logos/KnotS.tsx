@@ -13,17 +13,15 @@ const Mark: React.FC<MarkProps> = ({
     strokeLinecap="round"
     strokeLinejoin="round"
   >
-    {/* Teal back-S — wider reverse-S bulge, exaggerated twist */}
     <path
-      d="M 22,46 C 14,32 50,32 42,18"
+      d="M 22,46 C 22,32 42,32 42,18"
       stroke={secondary}
-      strokeWidth="8"
+      strokeWidth="6"
     />
-    {/* Violet S — skinny, normal stroke */}
     <path
       d="M 42,18 C 42,8 30,8 26,16 C 20,28 32,30 32,32 C 32,34 44,36 38,48 C 34,56 22,56 22,46"
       stroke={primary}
-      strokeWidth="8"
+      strokeWidth="6"
     />
   </svg>
 );
@@ -32,7 +30,7 @@ export function KnotS() {
   return (
     <LogoTile
       Mark={Mark}
-      caption="Variation B — Wide Möbius S. Skinny S with a more pronounced reverse-S bulge behind, dramatizing the ribbon's twist."
+      caption="Variation B — Thin. Concept 1's geometry at 6px stroke — refined but still confident."
     />
   );
 }
