@@ -19,7 +19,7 @@ export default defineConfig({
     poolOptions: { forks: { singleFork: true } },
     coverage: {
       provider: "v8",
-      reporter: ["text-summary", "text", "html"],
+      reporter: ["text-summary", "text", "html", "json-summary"],
       include: ["src/**/*.{ts,tsx}", "netlify/functions/**/*.ts"],
       exclude: [
         "tests/e2e/**",

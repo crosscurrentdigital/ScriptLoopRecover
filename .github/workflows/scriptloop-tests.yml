@@ -1,0 +1,64 @@
+name: ScriptLoop Tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    name: Test (with coverage)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.26.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run ScriptLoop tests with coverage
+        run: pnpm --filter @workspace/scriptloop run test -- --coverage
+
+      - name: Write coverage summary
+        if: always()
+        run: |
+          SUMMARY_FILE="artifacts/scriptloop/coverage/coverage-summary.json"
+          if [ ! -f "$SUMMARY_FILE" ]; then
+            echo "No coverage summary found at $SUMMARY_FILE" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          {
+            echo "## ScriptLoop Coverage"
+            echo ""
+            echo "| Metric | Covered / Total | % |"
+            echo "| --- | --- | --- |"
+            node -e "
+              const s = require('./' + process.env.SUMMARY_FILE).total;
+              for (const k of ['statements','branches','functions','lines']) {
+                const m = s[k];
+                console.log(\`| \${k} | \${m.covered} / \${m.total} | \${m.pct}% |\`);
+              }
+            "
+          } >> "$GITHUB_STEP_SUMMARY"
+        env:
+          SUMMARY_FILE: artifacts/scriptloop/coverage/coverage-summary.json
+
+      - name: Upload coverage artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scriptloop-coverage
+          path: artifacts/scriptloop/coverage
+          if-no-files-found: ignore
