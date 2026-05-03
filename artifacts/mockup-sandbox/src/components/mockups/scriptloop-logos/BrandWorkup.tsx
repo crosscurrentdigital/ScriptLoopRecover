@@ -132,7 +132,7 @@ export function BrandWorkup() {
           <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-zinc-400">
             Brand System
           </div>
-          <div className="text-sm text-zinc-700 mt-1">Concept C — Wrapped Möbius S · v1.0</div>
+          <div className="text-sm text-zinc-700 mt-1">Variation C — Reverse-S Möbius, 6px · v1.0</div>
         </div>
       </div>
 
