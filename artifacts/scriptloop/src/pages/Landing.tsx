@@ -56,7 +56,7 @@ export default function Landing() {
             </Link>
             <Link
               to="/sign-up"
-              className="rounded-full px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
+              className="inline-flex min-h-11 items-center rounded-full px-5 py-2.5 text-sm font-semibold text-white hover:opacity-90"
               style={{ background: BRAND.colors.ink }}
             >
               Get started
@@ -100,8 +100,13 @@ export default function Landing() {
             {/* Center: huge headline */}
             <div className="col-span-12 sm:col-span-9">
               <h1
-                className="text-[56px] font-bold leading-[0.92] tracking-[-0.04em] text-zinc-900 sm:text-[88px] md:text-[120px]"
-                style={font}
+                className="font-bold text-zinc-900"
+                style={{
+                  ...font,
+                  fontSize: "clamp(56px, 9vw, 120px)",
+                  lineHeight: 0.92,
+                  letterSpacing: "-0.04em",
+                }}
               >
                 Memorize
                 <br />
@@ -157,15 +162,17 @@ export default function Landing() {
               />
             </div>
             <div className="col-span-12 sm:col-span-10">
-              <p
-                className="text-3xl font-bold leading-tight tracking-tight sm:text-4xl"
-                style={font}
-              >
-                "Memorize anything by listening to it on loop."
-              </p>
-              <p className="mt-4 text-sm text-zinc-400">
-                — The ScriptLoop method, in one sentence.
-              </p>
+              <figure>
+                <blockquote
+                  className="font-bold leading-tight tracking-tight"
+                  style={{ ...font, fontSize: "clamp(28px, 3.2vw, 40px)" }}
+                >
+                  "Memorize anything by listening to it on loop."
+                </blockquote>
+                <figcaption className="mt-4 text-sm text-zinc-400">
+                  — <cite className="not-italic">The ScriptLoop method, in one sentence.</cite>
+                </figcaption>
+              </figure>
             </div>
           </div>
         </section>
@@ -189,7 +196,10 @@ export default function Landing() {
                 </div>
               </div>
               <div className="col-span-12 sm:col-span-9">
-                <h2 className="text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
+                <h2
+                  className="font-bold tracking-tight text-zinc-900"
+                  style={{ fontSize: "clamp(28px, 3.2vw, 40px)" }}
+                >
                   Listen. Hide. Loop.
                 </h2>
               </div>
@@ -199,15 +209,25 @@ export default function Landing() {
               {MOVEMENTS.map(({ n, title, body, hue }) => (
                 <div key={title} className="bg-white p-8 sm:p-10">
                   <div
-                    className="mb-5 text-4xl font-bold sm:mb-6 sm:text-5xl"
-                    style={{ color: hue, fontFamily: BRAND.font }}
+                    className="mb-5 font-bold sm:mb-6"
+                    style={{
+                      color: hue,
+                      fontFamily: BRAND.font,
+                      fontSize: "clamp(36px, 3.5vw, 48px)",
+                    }}
                   >
                     {n}
                   </div>
-                  <h3 className="mb-3 text-xl font-bold tracking-tight text-zinc-900 sm:text-2xl">
+                  <h3
+                    className="mb-3 font-bold tracking-tight text-zinc-900"
+                    style={{ fontSize: "clamp(20px, 1.8vw, 26px)" }}
+                  >
                     {title}
                   </h3>
-                  <p className="text-sm leading-relaxed text-zinc-600 sm:text-base">
+                  <p
+                    className="leading-relaxed text-zinc-600"
+                    style={{ fontSize: "clamp(14px, 1.1vw, 17px)" }}
+                  >
                     {body}
                   </p>
                 </div>
@@ -220,7 +240,10 @@ export default function Landing() {
         <section className="px-6 pb-16 sm:px-12 sm:pb-24">
           <div className="mx-auto grid max-w-7xl grid-cols-12 items-center gap-6">
             <div className="col-span-12 sm:col-span-7">
-              <h2 className="text-3xl font-bold tracking-tight text-zinc-900 sm:text-5xl">
+              <h2
+                className="font-bold tracking-tight text-zinc-900"
+                style={{ fontSize: "clamp(32px, 4vw, 56px)", lineHeight: 1.05 }}
+              >
                 Your next pitch.
                 <br />
                 Your next monologue.
