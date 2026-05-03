@@ -9,6 +9,7 @@ import {
   checkAudioConfig,
   generateAndUploadAudio,
 } from "./_lib/audioPipeline";
+import { deleteObjectByPublicUrl } from "../../src/lib/r2-server";
 import {
   createScriptSchema,
   createScriptWithAudioSchema,
@@ -81,7 +82,25 @@ const handler = async (req: Request): Promise<Response> => {
   if (req.method === "POST") {
     const parsed = await parseJsonBody(req, createScriptSchema);
     if (!parsed.ok) return parsed.response;
-    const { title, content, loopGapSeconds = 2 } = parsed.data;
+    const {
+      title,
+      content,
+      loopGapSeconds = 2,
+      audioUrl,
+      audioSource,
+    } = parsed.data;
+
+    // audioUrl + audioSource must be provided together. This is the
+    // user-recorded path: the client uploads the recording to R2 first
+    // (via /api/storage/presign), then creates the script row in one
+    // shot. Either both come through or neither does.
+    if ((audioUrl === undefined) !== (audioSource === undefined)) {
+      return errorResponse(
+        400,
+        "invalid_request",
+        "audioUrl and audioSource must be provided together.",
+      );
+    }
 
     const [newScript] = await db
       .insert(scripts)
@@ -90,6 +109,8 @@ const handler = async (req: Request): Promise<Response> => {
         title,
         content,
         loopGapSeconds,
+        ...(audioUrl !== undefined ? { audioUrl } : {}),
+        ...(audioSource !== undefined ? { audioSource } : {}),
       })
       .returning();
 
@@ -107,6 +128,32 @@ const handler = async (req: Request): Promise<Response> => {
     if (!parsed.ok) return parsed.response;
     const body = parsed.data;
 
+    // Capture the previous audioUrl BEFORE the update so we can
+    // best-effort delete the old R2 object after a successful rotation.
+    // This mirrors the privacy posture of the regenerate flow (see
+    // generate-audio.ts and `replit.md` → Audio privacy posture):
+    // recorded audio also lives at a public-by-design URL, so a
+    // re-record must actually revoke access to the previous URL, not
+    // just stop linking to it.
+    //
+    // Known race: two concurrent re-records of the same script can both
+    // read the same prior URL and both delete it; the losing writer's
+    // newly uploaded R2 object is then orphaned (still public-by-design
+    // behind its unguessable URL but no longer referenced from the row).
+    // We accept this for parity with generate-audio's identical
+    // pre-read-then-update pattern; the practical risk is bounded by
+    // the unguessable R2 key shape and the per-user rate limits. If
+    // this ever matters, switch to `SELECT … FOR UPDATE` here and in
+    // generate-audio together.
+    let previousAudioUrl: string | null = null;
+    if (body.audioUrl !== undefined) {
+      const existing = await db
+        .select({ audioUrl: scripts.audioUrl })
+        .from(scripts)
+        .where(and(eq(scripts.id, scriptId), eq(scripts.userId, userId)));
+      previousAudioUrl = existing[0]?.audioUrl ?? null;
+    }
+
     const [updated] = await db
       .update(scripts)
       .set({ ...body, updatedAt: new Date() })
@@ -115,6 +162,22 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (!updated) {
       return errorResponse(404, "not_found", "Script not found.");
+    }
+
+    if (
+      previousAudioUrl &&
+      body.audioUrl !== undefined &&
+      previousAudioUrl !== body.audioUrl
+    ) {
+      try {
+        await deleteObjectByPublicUrl(previousAudioUrl);
+      } catch (err) {
+        // Non-fatal: the row already points at the new URL. Log and
+        // move on so the user isn't blocked on a stuck cleanup.
+        // Phase: rotate-old-audio. Best-effort cleanup of the prior R2
+        // object after the row already points at the new audioUrl.
+        captureFunctionError(err, { route: ROUTE });
+      }
     }
 
     return new Response(JSON.stringify(updated), {

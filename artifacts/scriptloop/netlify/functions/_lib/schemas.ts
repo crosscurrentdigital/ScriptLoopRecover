@@ -21,10 +21,28 @@ export const scriptIdParamSchema = z.coerce
   .int()
   .positive();
 
+// Audio sources we accept from clients. "elevenlabs" is the legacy
+// label still written by the AI pipeline (`attachAudioToScript`); "ai"
+// is accepted as a forward-compatible alias. "user" is for self-recorded
+// audio uploaded via the presigned R2 PUT flow.
+export const audioSourceSchema = z.enum(["ai", "elevenlabs", "user"]);
+
+// R2 public audio URLs always live under R2_PUBLIC_URL; we don't enforce
+// the host here (client trust boundary is the ownership check on the
+// row + the unguessable key in the path), but we cap the length and
+// require a valid URL shape so we can't be coerced into storing junk.
+export const audioUrlSchema = z.string().url().max(2048);
+
 export const createScriptSchema = z.object({
   title: trimmed(MAX_TITLE_LENGTH),
   content: z.string().min(1).max(MAX_TEXT_LENGTH),
   loopGapSeconds: loopGapSchema.optional(),
+  // When the user recorded their own audio, the client uploads it to R2
+  // first (via /api/storage/presign) and then creates the script row
+  // with the resulting public URL. Both fields are optional and must be
+  // provided together (enforced in the handler).
+  audioUrl: audioUrlSchema.optional(),
+  audioSource: audioSourceSchema.optional(),
 });
 
 export const createScriptWithAudioSchema = z.object({
@@ -38,8 +56,8 @@ export const updateScriptSchema = z
   .object({
     title: trimmed(MAX_TITLE_LENGTH).optional(),
     content: z.string().min(1).max(MAX_TEXT_LENGTH).optional(),
-    audioUrl: z.string().url().max(2048).optional(),
-    audioSource: z.string().max(64).optional(),
+    audioUrl: audioUrlSchema.optional(),
+    audioSource: audioSourceSchema.optional(),
     voiceId: voiceIdSchema.optional(),
     loopGapSeconds: loopGapSchema.optional(),
   })
@@ -52,7 +70,11 @@ export const generateAudioSchema = z.object({
 });
 
 const SAFE_FILENAME = /^[A-Za-z0-9._-]+$/;
-const SAFE_CONTENT_TYPE = /^[A-Za-z0-9.+\-/]+$/;
+// MIME `type/subtype` with optional RFC 6838 parameters. We have to
+// allow `;`, `=`, and space for things like `audio/webm;codecs=opus`
+// which `MediaRecorder` returns on Chrome/Firefox; rejecting them broke
+// the user-recording flow in those browsers.
+const SAFE_CONTENT_TYPE = /^[A-Za-z0-9.+\-/;= ]+$/;
 
 export const presignSchema = z.object({
   fileName: z

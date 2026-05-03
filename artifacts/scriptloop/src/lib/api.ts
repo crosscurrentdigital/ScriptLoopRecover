@@ -102,13 +102,26 @@ export function useScript(id: number | undefined) {
   });
 }
 
+export interface CreateScriptInput {
+  title: string;
+  content: string;
+  loopGapSeconds?: number;
+  // When the user recorded their own audio, the client uploads it to
+  // R2 first (via `uploadToR2`) and passes the resulting public URL
+  // here together with `audioSource: "user"`. Both fields must be sent
+  // together — the server rejects partial pairs with `invalid_request`.
+  audioUrl?: string;
+  audioSource?: "user" | "ai" | "elevenlabs";
+}
+
 export function useCreateScript() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (input: { title: string; content: string; loopGapSeconds?: number }) =>
+    mutationFn: (input: CreateScriptInput) =>
       http<Script>("/api/scripts", { method: "POST", body: JSON.stringify(input) }),
-    onSuccess: () => {
+    onSuccess: (script) => {
       qc.invalidateQueries({ queryKey: ["scripts"] });
+      qc.setQueryData(["scripts", script.id], script);
     },
   });
 }
@@ -155,7 +168,11 @@ export function useCreateScriptWithAudio() {
 export function useUpdateScript(id: number) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (input: Partial<Pick<Script, "title" | "content" | "loopGapSeconds" | "audioUrl">>) =>
+    mutationFn: (
+      input: Partial<
+        Pick<Script, "title" | "content" | "loopGapSeconds" | "audioUrl" | "audioSource">
+      >,
+    ) =>
       http<Script>(`/api/scripts/${id}`, {
         method: "PUT",
         body: JSON.stringify(input),

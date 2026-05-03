@@ -113,6 +113,12 @@ is documented there.
 
 **Decision (Task 29, May 2026): public-by-design behind an unguessable URL.**
 
+This applies equally to **AI-generated** and **user-recorded** audio
+(`scripts.audio_source` is `"elevenlabs"`/`"ai"` or `"user"`). Both
+paths upload to the same R2 bucket via the same key shape, so the
+posture, consent gate, Sentry scrubbing, and rotation behavior below
+all apply to both.
+
 Generated audio is uploaded to a Cloudflare R2 bucket whose `public-read`
 policy is enabled, and served via `R2_PUBLIC_URL/<key>` where the key is
 `audio/<userId>/<timestamp>-<nonce>-<filename>.mp3`. The `<nonce>` is a
@@ -147,11 +153,12 @@ incremental privacy gain. We may revisit if the threat model changes.
 - Plausible Analytics is cookie-less and we do not emit any custom events
   containing audio URLs (only automatic pageviews).
 - **URL rotation / leaked-URL revocation:** there is no separate "rotate"
-  endpoint by design. Regenerating audio for an existing script (POST
-  `/api/generate-audio` with a `scriptId`) writes a new R2 key (timestamp
-  in the path), updates `scripts.audioUrl`, **and best-effort deletes the
-  previous R2 object** via `deleteObjectByPublicUrl` so a leaked old URL
-  stops working. The deletion is best-effort: if R2 is unreachable the
+  endpoint by design. Both rotation paths — regenerating AI audio (POST
+  `/api/generate-audio` with a `scriptId`) and re-recording user audio
+  (PUT `/api/scripts/:id` with a new `audioUrl` + `audioSource: "user"`)
+  — write a new R2 key (timestamp in the path), update `scripts.audioUrl`,
+  **and best-effort delete the previous R2 object** via
+  `deleteObjectByPublicUrl` so a leaked old URL stops working. The deletion is best-effort: if R2 is unreachable the
   request still succeeds (the user got their new audio) and the failure
   is captured to Sentry. `POST /api/scripts/with-audio` (initial create)
   has no previous URL to delete. Telling users to "regenerate to rotate"

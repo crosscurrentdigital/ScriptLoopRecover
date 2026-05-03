@@ -29,8 +29,16 @@ import {
   useDeleteScript,
   useGenerateAudio,
   useScript,
+  useUpdateScript,
   useVoices,
 } from "@/lib/api";
+import { uploadToR2 } from "@/lib/r2";
+import {
+  VoiceRecorder,
+  type RecordedAudio,
+} from "@/components/VoiceRecorder";
+
+type AudioMode = "ai" | "record";
 
 export default function ScriptDetailPage() {
   const params = useParams();
@@ -47,6 +55,7 @@ export default function ScriptDetailPage() {
   } = useVoices();
   const deleteScript = useDeleteScript();
   const generateAudio = useGenerateAudio(scriptId ?? 0);
+  const updateScript = useUpdateScript(scriptId ?? 0);
 
   const [loopCount, setLoopCount] = useState(0);
   const handleLoopComplete = useCallback(
@@ -58,6 +67,9 @@ export default function ScriptDetailPage() {
   const [audioPrivacyAck, setAudioPrivacyAck] = useState<boolean>(
     () => hasAudioPrivacyAck(),
   );
+  const [audioMode, setAudioMode] = useState<AudioMode>("ai");
+  const [recorded, setRecorded] = useState<RecordedAudio | null>(null);
+  const [uploading, setUploading] = useState(false);
   useEffect(() => {
     // Reset to the loaded script's voice whenever the script id changes,
     // so navigating directly between scripts doesn't carry over the
@@ -108,6 +120,55 @@ export default function ScriptDetailPage() {
       });
     }
   }, [scriptId, script, selectedVoiceId, audioPrivacyAck, generateAudio, toast]);
+
+  const handleSaveRecording = useCallback(async () => {
+    if (!scriptId || !script) return;
+    if (!recorded) {
+      toast({
+        title: "Record yourself first",
+        description: "Capture a take, then tap “Use this recording”.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (!audioPrivacyAck) {
+      toast({
+        title: "Confirm audio privacy first",
+        description:
+          "Please acknowledge that audio is hosted at a public, hard-to-guess URL.",
+        variant: "destructive",
+      });
+      return;
+    }
+    try {
+      setUploading(true);
+      // Upload to R2 first via presigned PUT, then update the row. The
+      // server best-effort deletes the previous R2 object on rotation
+      // (see netlify/functions/scripts.ts → PUT branch), so this also
+      // revokes access to the prior audio URL.
+      const fileName = `recording-${Date.now()}.${recorded.extension}`;
+      const { url } = await uploadToR2(
+        recorded.blob,
+        fileName,
+        recorded.mimeType,
+      );
+      await updateScript.mutateAsync({
+        audioUrl: url,
+        audioSource: "user",
+      });
+      setRecorded(null);
+      toast({ title: "Recording saved" });
+    } catch (e) {
+      const description = e instanceof Error ? e.message : undefined;
+      toast({
+        title: "Couldn't save recording",
+        description,
+        variant: "destructive",
+      });
+    } finally {
+      setUploading(false);
+    }
+  }, [scriptId, script, recorded, audioPrivacyAck, updateScript, toast]);
 
   const handleDelete = async () => {
     if (!scriptId || !script) return;
@@ -227,12 +288,72 @@ export default function ScriptDetailPage() {
 
           <div className="space-y-3 rounded-md border p-3">
             <div className="space-y-1">
-              <h3 className="text-sm font-medium">Regenerate audio</h3>
+              <h3 className="text-sm font-medium">
+                {audioMode === "record"
+                  ? "Record yourself"
+                  : "Regenerate audio"}
+              </h3>
               <p className="text-xs text-muted-foreground">
-                Pick a voice and re-run text-to-speech for this script. Limited
-                to 20 audio generations per hour.
+                {audioMode === "record"
+                  ? "Replace this script's audio with a take of your own voice."
+                  : "Pick a voice and re-run text-to-speech for this script. Limited to 20 audio generations per hour."}
               </p>
             </div>
+            <div
+              className="inline-flex rounded-md border p-0.5"
+              role="tablist"
+              aria-label="Audio source"
+            >
+              <Button
+                type="button"
+                size="sm"
+                variant={audioMode === "ai" ? "default" : "ghost"}
+                onClick={() => setAudioMode("ai")}
+                disabled={generateAudio.isPending || uploading}
+                role="tab"
+                aria-selected={audioMode === "ai"}
+              >
+                AI voice
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant={audioMode === "record" ? "default" : "ghost"}
+                onClick={() => setAudioMode("record")}
+                disabled={generateAudio.isPending || uploading}
+                role="tab"
+                aria-selected={audioMode === "record"}
+              >
+                Record yourself
+              </Button>
+            </div>
+            {audioMode === "record" ? (
+              <>
+                <VoiceRecorder
+                  onAccept={(audio) => setRecorded(audio)}
+                  disabled={uploading || updateScript.isPending}
+                />
+                <AudioPrivacyConsent onChange={setAudioPrivacyAck} />
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button
+                    onClick={handleSaveRecording}
+                    disabled={
+                      !recorded ||
+                      !audioPrivacyAck ||
+                      uploading ||
+                      updateScript.isPending
+                    }
+                  >
+                    {uploading
+                      ? "Uploading recording…"
+                      : updateScript.isPending
+                        ? "Saving…"
+                        : "Save recording"}
+                  </Button>
+                </div>
+              </>
+            ) : (
+            <>
             <div className="space-y-2">
               <Label htmlFor="regenerate-voice">Voice</Label>
               {voicesError ? (
@@ -288,6 +409,8 @@ export default function ScriptDetailPage() {
                   </span>
                 )}
             </div>
+            </>
+            )}
           </div>
         </CardContent>
       </Card>

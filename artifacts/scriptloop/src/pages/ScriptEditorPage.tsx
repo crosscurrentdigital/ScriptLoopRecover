@@ -22,17 +22,25 @@ import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
 import { useDraft } from "@/hooks/useDraft";
 import {
+  useCreateScript,
   useCreateScriptWithAudio,
   useScript,
   useUpdateScript,
   useVoices,
 } from "@/lib/api";
+import { uploadToR2 } from "@/lib/r2";
 import { AudioQuotaBadge } from "@/components/AudioQuotaBadge";
 import {
   AudioPrivacyConsent,
   hasAudioPrivacyAck,
 } from "@/components/AudioPrivacyConsent";
+import {
+  VoiceRecorder,
+  type RecordedAudio,
+} from "@/components/VoiceRecorder";
 import type { Script } from "@/db/schema";
+
+type AudioMode = "ai" | "record";
 
 const MAX_CONTENT_LENGTH = 2000;
 
@@ -118,9 +126,14 @@ function CreateEditor() {
     isFetching: voicesFetching,
   } = useVoices();
   const createWithAudio = useCreateScriptWithAudio();
+  const createScript = useCreateScript();
   const [audioPrivacyAck, setAudioPrivacyAck] = useState<boolean>(
     () => hasAudioPrivacyAck(),
   );
+
+  const [audioMode, setAudioMode] = useState<AudioMode>("ai");
+  const [recorded, setRecorded] = useState<RecordedAudio | null>(null);
+  const [uploading, setUploading] = useState(false);
 
   const { draft, setDraft, clearDraft } = useDraft<DraftShape>({
     key: "new",
@@ -128,7 +141,8 @@ function CreateEditor() {
   });
 
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const isSubmitting = createWithAudio.isPending;
+  const isSubmitting =
+    createWithAudio.isPending || createScript.isPending || uploading;
 
   const handleGenerateAndSave = async () => {
     setSubmitError(null);
@@ -149,17 +163,59 @@ function CreateEditor() {
       });
       return;
     }
-    if (!draft.voiceId) {
-      toast({ title: "Pick a voice first", variant: "destructive" });
-      return;
-    }
     if (!audioPrivacyAck) {
       toast({
         title: "Confirm audio privacy first",
         description:
-          "Please acknowledge that generated audio is hosted at a public, hard-to-guess URL.",
+          "Please acknowledge that audio is hosted at a public, hard-to-guess URL.",
         variant: "destructive",
       });
+      return;
+    }
+
+    if (audioMode === "record") {
+      if (!recorded) {
+        toast({
+          title: "Record yourself first",
+          description: "Capture a take, then tap “Use this recording”.",
+          variant: "destructive",
+        });
+        return;
+      }
+      try {
+        setUploading(true);
+        // Upload to R2 first via presigned PUT, then create the row in
+        // one shot. If the create call fails the R2 object is orphaned
+        // — that's the same trade-off the AI path makes in reverse and
+        // the cost is bounded by MAX_RECORDING_BYTES.
+        const fileName = `recording-${Date.now()}.${recorded.extension}`;
+        const { url } = await uploadToR2(
+          recorded.blob,
+          fileName,
+          recorded.mimeType,
+        );
+        const created = await createScript.mutateAsync({
+          title: draft.title.trim(),
+          content: draft.content,
+          loopGapSeconds: draft.loopGapSeconds,
+          audioUrl: url,
+          audioSource: "user",
+        });
+        clearDraft();
+        toast({ title: "Script created" });
+        navigate(`/scripts/${created.id}`);
+      } catch (e) {
+        const message =
+          e instanceof Error ? e.message : "Something went wrong.";
+        setSubmitError(message);
+      } finally {
+        setUploading(false);
+      }
+      return;
+    }
+
+    if (!draft.voiceId) {
+      toast({ title: "Pick a voice first", variant: "destructive" });
       return;
     }
 
@@ -246,11 +302,46 @@ function CreateEditor() {
         <CardHeader>
           <CardTitle className="text-base">Audio</CardTitle>
           <CardDescription>
-            Audio is generated when you save. You can swap the voice or
-            regenerate audio later from the script's detail page.
+            Pick an AI voice or record yourself. You can swap or
+            re-record later from the script's detail page.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          <div
+            className="inline-flex rounded-md border p-0.5"
+            role="tablist"
+            aria-label="Audio source"
+          >
+            <Button
+              type="button"
+              size="sm"
+              variant={audioMode === "ai" ? "default" : "ghost"}
+              onClick={() => setAudioMode("ai")}
+              disabled={isSubmitting}
+              role="tab"
+              aria-selected={audioMode === "ai"}
+            >
+              AI voice
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant={audioMode === "record" ? "default" : "ghost"}
+              onClick={() => setAudioMode("record")}
+              disabled={isSubmitting}
+              role="tab"
+              aria-selected={audioMode === "record"}
+            >
+              Record yourself
+            </Button>
+          </div>
+
+          {audioMode === "record" ? (
+            <VoiceRecorder
+              onAccept={(audio) => setRecorded(audio)}
+              disabled={isSubmitting}
+            />
+          ) : (
           <div className="space-y-2">
             <Label>Voice</Label>
             {voicesError ? (
@@ -294,6 +385,7 @@ function CreateEditor() {
               </Select>
             )}
           </div>
+          )}
 
           <div className="space-y-2">
             <Label>Loop gap: {draft.loopGapSeconds}s</Label>
@@ -345,7 +437,15 @@ function CreateEditor() {
           size="lg"
           className="w-full sm:w-auto"
         >
-          {isSubmitting ? "Generating audio…" : "Generate & Save"}
+          {isSubmitting
+            ? audioMode === "record"
+              ? uploading
+                ? "Uploading recording…"
+                : "Saving…"
+              : "Generating audio…"
+            : audioMode === "record"
+              ? "Save with recording"
+              : "Generate & Save"}
         </Button>
       </div>
     </main>
