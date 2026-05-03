@@ -7,6 +7,10 @@ import {
   type HideStrategy,
   type Token,
 } from "@/hooks/useWordHiding";
+import {
+  preferencesToCssVars,
+  type ReadingPreferences,
+} from "@/lib/reading-preferences";
 
 export interface ProgressiveTextProps {
   text: string;
@@ -14,6 +18,12 @@ export interface ProgressiveTextProps {
   hideStrategy?: HideStrategy;
   className?: string;
   showPeekButton?: boolean;
+  /**
+   * When provided, applies these reading preferences as inline CSS
+   * variables on the surface, overriding the user-level globals set on
+   * `:root`. Used by per-script overrides on the Script Detail page.
+   */
+  preferencesOverride?: ReadingPreferences | null;
 }
 
 const PLACEHOLDER_CHAR = "▢";
@@ -55,6 +65,7 @@ export function ProgressiveText({
   hideStrategy = "random",
   className,
   showPeekButton = true,
+  preferencesOverride,
 }: ProgressiveTextProps) {
   const { tokens, hiddenCount, wordCount, hidePercent } = useWordHiding({
     text,
@@ -88,6 +99,13 @@ export function ProgressiveText({
       <div
         className="reading-surface whitespace-pre-wrap rounded-md border p-4"
         data-testid="progressive-text"
+        style={
+          preferencesOverride
+            ? (preferencesToCssVars(
+                preferencesOverride,
+              ) as React.CSSProperties)
+            : undefined
+        }
       >
         {tokens.length === 0 ? (
           <span className="text-muted-foreground">(empty)</span>

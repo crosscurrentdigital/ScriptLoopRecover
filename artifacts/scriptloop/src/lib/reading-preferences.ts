@@ -200,3 +200,15 @@ export const SAMPLE_VERSE =
   "For God so loved the world, that he gave his only begotten Son, that whosoever believeth in him should not perish, but have everlasting life. — John 3:16";
 
 export const READING_PREFERENCES_STORAGE_KEY = "scriptloop:readingPreferences";
+
+/**
+ * Resolve the reading preferences that should be used for a given script:
+ * the per-script override when present, otherwise the user-level global.
+ */
+export function effectiveReadingPreferences(
+  globalPrefs: ReadingPreferences,
+  override: Partial<ReadingPreferences> | null | undefined,
+): ReadingPreferences {
+  if (!override) return globalPrefs;
+  return sanitizePreferences({ ...globalPrefs, ...override });
+}

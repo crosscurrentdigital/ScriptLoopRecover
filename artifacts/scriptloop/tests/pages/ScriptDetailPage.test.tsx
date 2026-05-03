@@ -114,6 +114,21 @@ vi.mock("@/lib/r2", () => ({
   uploadToR2: (...args: unknown[]) => uploadToR2Mock(...args),
 }));
 
+vi.mock("@/hooks/useReadingPreferences", async () => {
+  const { DEFAULT_PREFERENCES } = await import("@/lib/reading-preferences");
+  return {
+    useReadingPreferences: () => ({
+      preferences: DEFAULT_PREFERENCES,
+      setPreferences: vi.fn(),
+      resetPreferences: vi.fn(),
+      applyPreset: vi.fn(),
+      isLoaded: true,
+    }),
+    ReadingPreferencesProvider: ({ children }: { children: ReactNode }) =>
+      children,
+  };
+});
+
 const { default: ScriptDetailPage } = await import(
   "@/pages/ScriptDetailPage"
 );

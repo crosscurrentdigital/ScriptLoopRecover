@@ -48,6 +48,7 @@ export async function makeTestDb() {
       "audio_source" text,
       "voice_id" text,
       "loop_gap_seconds" integer DEFAULT 2,
+      "reading_overrides" jsonb,
       "created_at" timestamp DEFAULT now(),
       "updated_at" timestamp DEFAULT now(),
       CONSTRAINT scripts_user_id_fk FOREIGN KEY ("user_id")

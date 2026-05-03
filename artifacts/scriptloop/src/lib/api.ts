@@ -170,7 +170,15 @@ export function useUpdateScript(id: number) {
   return useMutation({
     mutationFn: (
       input: Partial<
-        Pick<Script, "title" | "content" | "loopGapSeconds" | "audioUrl" | "audioSource">
+        Pick<
+          Script,
+          | "title"
+          | "content"
+          | "loopGapSeconds"
+          | "audioUrl"
+          | "audioSource"
+          | "readingOverrides"
+        >
       >,
     ) =>
       http<Script>(`/api/scripts/${id}`, {

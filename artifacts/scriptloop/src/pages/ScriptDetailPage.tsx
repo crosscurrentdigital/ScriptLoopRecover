@@ -1,6 +1,17 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { ReadingPreferencesControls } from "@/components/ReadingPreferencesControls";
+import { useReadingPreferences } from "@/hooks/useReadingPreferences";
+import {
+  DEFAULT_PREFERENCES,
+  effectiveReadingPreferences,
+  preferencesToCssVars,
+  sanitizePreferences,
+  THEME_PRESETS,
+  SAMPLE_VERSE,
+  type ReadingPreferences,
+} from "@/lib/reading-preferences";
 import {
   Card,
   CardContent,
@@ -62,6 +73,70 @@ export default function ScriptDetailPage() {
     () => setLoopCount((n) => n + 1),
     [],
   );
+
+  const { preferences: globalPrefs } = useReadingPreferences();
+  const effectivePrefs = useMemo(
+    () =>
+      effectiveReadingPreferences(globalPrefs, script?.readingOverrides),
+    [globalPrefs, script?.readingOverrides],
+  );
+  const overrideActive = !!script?.readingOverrides;
+  const [overrideDraft, setOverrideDraft] =
+    useState<ReadingPreferences | null>(null);
+  // Reset the local draft whenever we switch scripts or the persisted
+  // override changes underneath us (e.g. after a save round-trip).
+  useEffect(() => {
+    setOverrideDraft(script?.readingOverrides ?? null);
+  }, [script?.id, script?.readingOverrides]);
+  const overrideDirty = useMemo(() => {
+    if (!overrideDraft) return false;
+    return (
+      JSON.stringify(overrideDraft) !==
+      JSON.stringify(script?.readingOverrides ?? null)
+    );
+  }, [overrideDraft, script?.readingOverrides]);
+  const previewPrefs = overrideDraft ?? effectivePrefs;
+  const previewStyle = useMemo(
+    () => preferencesToCssVars(previewPrefs) as React.CSSProperties,
+    [previewPrefs],
+  );
+
+  const handleEnableOverride = useCallback(() => {
+    // Seed the draft from the current effective prefs so the user starts
+    // from what they're already seeing, not from cold defaults.
+    setOverrideDraft(sanitizePreferences(effectivePrefs));
+  }, [effectivePrefs]);
+
+  const handleClearOverride = useCallback(async () => {
+    if (!scriptId) return;
+    try {
+      await updateScript.mutateAsync({ readingOverrides: null });
+      setOverrideDraft(null);
+      toast({ title: "Reading style cleared" });
+    } catch (e) {
+      toast({
+        title: "Couldn't clear reading style",
+        description: e instanceof Error ? e.message : undefined,
+        variant: "destructive",
+      });
+    }
+  }, [scriptId, updateScript, toast]);
+
+  const handleSaveOverride = useCallback(async () => {
+    if (!scriptId || !overrideDraft) return;
+    try {
+      await updateScript.mutateAsync({
+        readingOverrides: sanitizePreferences(overrideDraft),
+      });
+      toast({ title: "Reading style saved for this script" });
+    } catch (e) {
+      toast({
+        title: "Couldn't save reading style",
+        description: e instanceof Error ? e.message : undefined,
+        variant: "destructive",
+      });
+    }
+  }, [scriptId, overrideDraft, updateScript, toast]);
 
   const [selectedVoiceId, setSelectedVoiceId] = useState<string>("");
   const [audioPrivacyAck, setAudioPrivacyAck] = useState<boolean>(
@@ -424,7 +499,126 @@ export default function ScriptDetailPage() {
             text={script.content || ""}
             loopCount={loopCount}
             hideStrategy="random"
+            preferencesOverride={
+              script.readingOverrides
+                ? sanitizePreferences(script.readingOverrides)
+                : null
+            }
           />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Reading style</CardTitle>
+          <CardDescription>
+            {overrideActive
+              ? "This script uses its own reading style. Reading surfaces ignore your global preferences while this is set."
+              : "Following your global reading preferences. You can override them just for this script."}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div
+            className="reading-surface rounded-md border p-4 text-center shadow-sm"
+            style={previewStyle}
+            aria-live="polite"
+          >
+            <p className="reading-text">{SAMPLE_VERSE}</p>
+          </div>
+
+          {overrideDraft ? (
+            <>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs font-medium text-muted-foreground">
+                  Quick themes:
+                </span>
+                {THEME_PRESETS.map((preset) => (
+                  <Button
+                    key={preset.id}
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      setOverrideDraft(sanitizePreferences(preset.prefs))
+                    }
+                    className="reading-focus"
+                  >
+                    {preset.name}
+                  </Button>
+                ))}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() =>
+                    setOverrideDraft(sanitizePreferences(DEFAULT_PREFERENCES))
+                  }
+                  className="reading-focus"
+                >
+                  Reset draft
+                </Button>
+              </div>
+
+              <ReadingPreferencesControls
+                preferences={overrideDraft}
+                onChange={(patch) =>
+                  setOverrideDraft((prev) =>
+                    sanitizePreferences({
+                      ...(prev ?? effectivePrefs),
+                      ...patch,
+                    }),
+                  )
+                }
+                idPrefix={`script-${script.id}`}
+              />
+
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  type="button"
+                  onClick={handleSaveOverride}
+                  disabled={
+                    updateScript.isPending ||
+                    (overrideActive && !overrideDirty)
+                  }
+                >
+                  {updateScript.isPending
+                    ? "Saving…"
+                    : overrideActive
+                      ? "Save changes"
+                      : "Save override"}
+                </Button>
+                {overrideActive ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={handleClearOverride}
+                    disabled={updateScript.isPending}
+                    className="text-destructive hover:text-destructive"
+                  >
+                    Use global preferences
+                  </Button>
+                ) : (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => setOverrideDraft(null)}
+                    disabled={updateScript.isPending}
+                  >
+                    Cancel
+                  </Button>
+                )}
+              </div>
+            </>
+          ) : (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleEnableOverride}
+            >
+              Customize for this script
+            </Button>
+          )}
         </CardContent>
       </Card>
     </main>

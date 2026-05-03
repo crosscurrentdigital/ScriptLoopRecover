@@ -34,6 +34,7 @@ export const scripts = pgTable("scripts", {
   audioSource: text("audio_source"),
   voiceId: text("voice_id"),
   loopGapSeconds: integer("loop_gap_seconds").default(2),
+  readingOverrides: jsonb("reading_overrides").$type<ReadingPreferencesData>(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

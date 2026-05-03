@@ -69,6 +69,21 @@ vi.mock("@/components/ui/select", () => {
   };
 });
 
+vi.mock("@/hooks/useReadingPreferences", async () => {
+  const { DEFAULT_PREFERENCES } = await import("@/lib/reading-preferences");
+  return {
+    useReadingPreferences: () => ({
+      preferences: DEFAULT_PREFERENCES,
+      setPreferences: vi.fn(),
+      resetPreferences: vi.fn(),
+      applyPreset: vi.fn(),
+      isLoaded: true,
+    }),
+    ReadingPreferencesProvider: ({ children }: { children: ReactNode }) =>
+      children,
+  };
+});
+
 const { default: ZenMode } = await import("@/pages/ZenMode");
 
 function wrap(qc: QueryClient, path = "/scripts/1/zen") {

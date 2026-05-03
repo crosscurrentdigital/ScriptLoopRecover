@@ -1,0 +1,11 @@
+-- Per-script reading preference overrides.
+--
+-- Adds a nullable jsonb column on scripts. NULL means "fall back to the
+-- user-level preferences in user_preferences.reading"; a populated object
+-- means the script opts into its own full reading style. Reading surfaces
+-- (Zen Mode, Progressive memorization view) prefer the per-script value
+-- when present.
+--
+-- Idempotent so re-running against an environment that already has the
+-- column is a no-op.
+ALTER TABLE "scripts" ADD COLUMN IF NOT EXISTS "reading_overrides" jsonb;

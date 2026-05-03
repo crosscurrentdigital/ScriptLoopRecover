@@ -1,10 +1,15 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useScript } from "@/lib/api";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useLoopedAudio } from "@/hooks/useLoopedAudio";
 import { ZenControls } from "@/components/ZenControls";
+import { useReadingPreferences } from "@/hooks/useReadingPreferences";
+import {
+  effectiveReadingPreferences,
+  preferencesToCssVars,
+} from "@/lib/reading-preferences";
 
 const NOISE_DATA_URI =
   "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.05 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>\")";
@@ -18,6 +23,16 @@ export default function ZenMode() {
   const scriptId = params.id ? Number(params.id) : undefined;
 
   const { data: script, isLoading, error } = useScript(scriptId);
+  const { preferences: globalPrefs } = useReadingPreferences();
+  const effectivePrefs = useMemo(
+    () =>
+      effectiveReadingPreferences(globalPrefs, script?.readingOverrides),
+    [globalPrefs, script?.readingOverrides],
+  );
+  const readingStyle = useMemo(
+    () => preferencesToCssVars(effectivePrefs) as React.CSSProperties,
+    [effectivePrefs],
+  );
   const [gapSeconds, setGapSeconds] = useState<number>(2);
 
   // Sync gap from script once it loads (and when switching scripts)
@@ -156,7 +171,7 @@ export default function ZenMode() {
     <ZenShell>
       <article
         className="zen-text reading-surface mx-auto my-16 max-w-[640px] rounded-xl px-8 py-16 text-center shadow-2xl shadow-black/40 sm:my-24 sm:px-12 sm:py-20"
-        style={{ whiteSpace: "pre-wrap" }}
+        style={{ whiteSpace: "pre-wrap", ...readingStyle }}
       >
         {script.content || "(empty script)"}
       </article>

@@ -4,20 +4,13 @@ import { db } from "../../src/db/index";
 import { userPreferences } from "../../src/db/schema";
 import { getSession } from "./_lib/session";
 import { withSentry } from "./_lib/sentry";
-import { errorResponse, parseJsonBody } from "./_lib/schemas";
+import {
+  errorResponse,
+  parseJsonBody,
+  readingPreferencesSchema,
+} from "./_lib/schemas";
 
 const ROUTE = "/api/preferences";
-
-const readingPreferencesSchema = z
-  .object({
-    fontFamily: z.string().min(1).max(64),
-    backgroundColor: z.string().min(1).max(64),
-    textColor: z.string().min(1).max(64),
-    letterSpacing: z.number().min(0).max(8),
-    lineHeight: z.number().min(1).max(3),
-    fontSize: z.number().int().min(10).max(48),
-  })
-  .strict();
 
 const updatePreferencesSchema = z
   .object({

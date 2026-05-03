@@ -52,6 +52,17 @@ export const createScriptWithAudioSchema = z.object({
   loopGapSeconds: loopGapSchema.optional(),
 });
 
+export const readingPreferencesSchema = z
+  .object({
+    fontFamily: z.string().min(1).max(64),
+    backgroundColor: z.string().min(1).max(64),
+    textColor: z.string().min(1).max(64),
+    letterSpacing: z.number().min(0).max(8),
+    lineHeight: z.number().min(1).max(3),
+    fontSize: z.number().int().min(10).max(48),
+  })
+  .strict();
+
 export const updateScriptSchema = z
   .object({
     title: trimmed(MAX_TITLE_LENGTH).optional(),
@@ -60,6 +71,9 @@ export const updateScriptSchema = z
     audioSource: audioSourceSchema.optional(),
     voiceId: voiceIdSchema.optional(),
     loopGapSeconds: loopGapSchema.optional(),
+    // null clears the override (fall back to user-level preferences);
+    // a populated object opts the script into its own full reading style.
+    readingOverrides: readingPreferencesSchema.nullable().optional(),
   })
   .strict();
 
