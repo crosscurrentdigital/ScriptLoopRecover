@@ -1,0 +1,131 @@
+2:41:41 AM: build-image version: ac6eb13fbf000e5c09ad677efd8b7c3c2d0142b6 (noble-new-builds)
+2:41:41 AM: buildbot version: 1e1f172b82fc46a7a7b4b14d04d14163b44b9b01
+2:41:41 AM: Building with cache
+2:41:41 AM: Starting to prepare the repo for build
+2:41:41 AM: Preparing Git Reference refs/heads/main
+2:41:43 AM: Installing dependencies
+2:41:43 AM: mise ~/.config/mise/config.toml tools: python@3.14.3
+2:41:43 AM: mise ~/.config/mise/config.toml tools: ruby@3.4.8
+2:41:43 AM: mise ~/.config/mise/config.toml tools: go@1.26.2
+2:41:44 AM: v22.22.2 is already installed.
+2:41:44 AM: Now using node v22.22.2 (npm v10.9.7)
+2:41:44 AM: Enabling Node.js Corepack
+2:41:44 AM: pnpm workspaces detected
+2:41:45 AM: Installing npm packages using pnpm version 10.30.3
+2:41:45 AM: Scope: all 9 workspace projects
+2:41:45 AM: Lockfile is up to date, resolution step is skipped
+2:41:45 AM: Progress: resolved 1, reused 0, downloaded 0, added 0
+2:41:45 AM: Packages: +886
+2:41:45 AM: ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+2:41:46 AM: Progress: resolved 886, reused 0, downloaded 302, added 300
+2:41:47 AM: Progress: resolved 886, reused 0, downloaded 548, added 546
+2:41:48 AM: Progress: resolved 886, reused 0, downloaded 882, added 883
+2:41:48 AM: Progress: resolved 886, reused 0, downloaded 885, added 886, done
+2:41:49 AM: .../esbuild@0.27.3/node_modules/esbuild postinstall$ node install.js
+2:41:49 AM: .../esbuild@0.27.3/node_modules/esbuild postinstall: Done
+2:41:49 AM: dependencies:
+2:41:49 AM: + @replit/connectors-sdk 0.4.0
+2:41:49 AM: devDependencies:
+2:41:49 AM: + prettier 3.8.1
+2:41:49 AM: + typescript 5.9.3
+2:41:50 AM: . preinstall$ sh -c 'rm -f package-lock.json yarn.lock; case "$npm_config_user_agent" in pnpm/*) ;; *) echo "Use pnpm instead" >&2; exit 1 ;; esac'
+2:41:50 AM: . preinstall: Done
+2:41:50 AM: Done in 4.9s using pnpm v10.30.3
+2:41:50 AM: npm packages installed using pnpm
+2:41:50 AM: Successfully installed dependencies
+2:41:50 AM: Detected 0 framework(s)
+2:41:51 AM: Starting build script
+2:41:51 AM: Section completed: initializing
+2:41:53 AM: ​
+2:41:53 AM: Netlify Build                                                 
+2:41:53 AM: ────────────────────────────────────────────────────────────────
+2:41:53 AM: ​
+2:41:53 AM: ❯ Version
+2:41:53 AM:   @netlify/build 35.13.4
+2:41:53 AM: ​
+2:41:53 AM: ❯ Flags
+2:41:53 AM:   accountId: 68828c3e6052f77f8c859d01
+2:41:53 AM:   baseRelDir: true
+2:41:53 AM:   buildId: 69f70a44e95e8f00083bd52b
+2:41:53 AM:   deployId: 69f70a44e95e8f00083bd52d
+2:41:53 AM: ​
+2:41:53 AM: ❯ Current directory
+2:41:53 AM:   /opt/build/repo
+2:41:53 AM: ​
+2:41:53 AM: ❯ Config file
+2:41:53 AM:   No config file was defined: using default values.
+2:41:53 AM: ​
+2:41:53 AM: ❯ Context
+2:41:53 AM:   production
+2:41:53 AM: ​
+2:41:53 AM: Build command from Netlify app                                
+2:41:53 AM: ────────────────────────────────────────────────────────────────
+2:41:53 AM: ​
+2:41:53 AM: $ npm run build
+2:41:53 AM: > workspace@0.0.0 build
+2:41:53 AM: > pnpm run typecheck && pnpm -r --if-present run build
+2:41:53 AM: > workspace@0.0.0 typecheck /opt/build/repo
+2:41:53 AM: > pnpm run typecheck:libs && pnpm -r --filter "./artifacts/**" --filter "./scripts" --if-present run typecheck
+2:41:54 AM: > workspace@0.0.0 typecheck:libs /opt/build/repo
+2:41:54 AM: > tsc --build
+2:41:55 AM: Scope: 4 of 9 workspace projects
+2:41:55 AM: artifacts/api-server typecheck$ tsc -p tsconfig.json --noEmit
+2:41:55 AM: artifacts/scriptloop typecheck$ tsc -p tsconfig.json --noEmit
+2:41:55 AM: artifacts/mockup-sandbox typecheck$ tsc -p tsconfig.json --noEmit
+2:41:55 AM: scripts typecheck$ tsc -p tsconfig.json --noEmit
+2:41:56 AM: scripts typecheck: Done
+2:41:57 AM: artifacts/api-server typecheck: Done
+2:42:00 AM: artifacts/mockup-sandbox typecheck: Done
+2:42:04 AM: artifacts/scriptloop typecheck: Done
+2:42:04 AM: Scope: 8 of 9 workspace projects
+2:42:04 AM: artifacts/mockup-sandbox build$ vite build
+2:42:04 AM: artifacts/scriptloop build$ vite build --config vite.config.ts
+2:42:04 AM: artifacts/scriptloop build: vite v7.3.2 building client environment for production...
+2:42:04 AM: artifacts/mockup-sandbox build: failed to load config from /opt/build/repo/artifacts/mockup-sandbox/vite.config.ts
+2:42:04 AM: artifacts/mockup-sandbox build: error during build:
+2:42:04 AM: artifacts/mockup-sandbox build: Error: PORT environment variable is required but was not provided.
+2:42:04 AM: artifacts/mockup-sandbox build:     at file:///opt/build/repo/artifacts/mockup-sandbox/node_modules/.vite-temp/vite.config.ts.timestamp-1777797724731-2c58ac6116f97.mjs:145:9
+2:42:04 AM: artifacts/mockup-sandbox build:     at ModuleJob.run (node:internal/modules/esm/module_job:343:25)
+2:42:04 AM: artifacts/mockup-sandbox build:     at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:665:26)
+2:42:04 AM: artifacts/mockup-sandbox build:     at async loadConfigFromBundledFile (file:///opt/build/repo/node_modules/.pnpm/vite@7.3.2_@types+node@25.3.5_jiti@2.6.1_lightningcss@1.31.1_tsx@4.21.0_yaml@2.8.2/node_modules/vite/dist/node/chunks/config.js:35920:12)
+2:42:04 AM: artifacts/mockup-sandbox build:     at async bundleAndLoadConfigFile (file:///opt/build/repo/node_modules/.pnpm/vite@7.3.2_@types+node@25.3.5_jiti@2.6.1_lightningcss@1.31.1_tsx@4.21.0_yaml@2.8.2/node_modules/vite/dist/node/chunks/config.js:35808:17)
+2:42:04 AM: artifacts/mockup-sandbox build:     at async loadConfigFromFile (file:///opt/build/repo/node_modules/.pnpm/vite@7.3.2_@types+node@25.3.5_jiti@2.6.1_lightningcss@1.31.1_tsx@4.21.0_yaml@2.8.2/node_modules/vite/dist/node/chunks/config.js:35775:42)
+2:42:04 AM: artifacts/mockup-sandbox build:     at async resolveConfig (file:///opt/build/repo/node_modules/.pnpm/vite@7.3.2_@types+node@25.3.5_jiti@2.6.1_lightningcss@1.31.1_tsx@4.21.0_yaml@2.8.2/node_modules/vite/dist/node/chunks/config.js:35424:22)
+2:42:04 AM: artifacts/mockup-sandbox build:     at async createBuilder (file:///opt/build/repo/node_modules/.pnpm/vite@7.3.2_@types+node@25.3.5_jiti@2.6.1_lightningcss@1.31.1_tsx@4.21.0_yaml@2.8.2/node_modules/vite/dist/node/chunks/config.js:33879:19)
+2:42:04 AM: artifacts/mockup-sandbox build:     at async CAC.<anonymous> (file:///opt/build/repo/node_modules/.pnpm/vite@7.3.2_@types+node@25.3.5_jiti@2.6.1_lightningcss@1.31.1_tsx@4.21.0_yaml@2.8.2/node_modules/vite/dist/node/cli.js:629:10)
+2:42:04 AM: artifacts/scriptloop build: transforming...
+2:42:04 AM: artifacts/mockup-sandbox build: Failed
+2:42:04 AM: /opt/build/repo/artifacts/mockup-sandbox:
+2:42:04 AM:  ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @workspace/mockup-sandbox@2.0.0 build: `vite build`
+2:42:04 AM: Exit status 1
+2:42:04 AM: ​
+2:42:04 AM: "build.command" failed                                        
+2:42:04 AM: ────────────────────────────────────────────────────────────────
+2:42:04 AM: ​
+2:42:04 AM:   Error message
+2:42:04 AM:   Command failed with exit code 1: npm run build (https://ntl.fyi/exit-code-1)
+2:42:04 AM: ​
+2:42:04 AM:   Error location
+2:42:04 AM:   In Build command from Netlify app:
+2:42:04 AM:   npm run build
+2:42:04 AM: ​
+2:42:04 AM:   Resolved config
+2:42:04 AM:   build:
+2:42:04 AM:     command: npm run build
+2:42:04 AM:     commandOrigin: ui
+2:42:04 AM:     environment:
+2:42:04 AM:       - DATABASE_URL
+2:42:04 AM:       - ELEVENLABE_API_KEY
+2:42:04 AM:       - R2_ACCESS_KEY_ID
+2:42:04 AM:       - R2_ACCOUNT_ID
+2:42:04 AM:       - R2_BUCKET_NAME
+2:42:04 AM:       - R2_PUBLIC_URL
+2:42:04 AM:       - R2_SECRET_ACCESS_KEY
+2:42:04 AM:       - VITE_NEON_AUTH_URL
+2:42:04 AM:     publish: /opt/build/repo/dist/public
+2:42:04 AM:     publishOrigin: ui
+2:42:04 AM:   functionsDirectory: /opt/build/repo/netlify/functions
+2:42:05 AM: Failed during stage 'building site': Build script returned non-zero exit code: 2 (https://ntl.fyi/exit-code-2)
+2:42:05 AM: Build failed due to a user error: Build script returned non-zero exit code: 2
+2:42:05 AM: Failing build: Failed to build site
+2:42:05 AM: Finished processing build request in 23.946s
