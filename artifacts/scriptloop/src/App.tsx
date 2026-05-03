@@ -61,6 +61,7 @@ function AppRoutes() {
   return (
     <NeonAuthUIProvider
       authClient={authClient}
+      basePath="/"
       navigate={(href) => navigate(href)}
     >
       <Routes>

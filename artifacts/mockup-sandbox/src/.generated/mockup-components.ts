@@ -15,10 +15,10 @@ export const modules: ModuleMap = {
   "./components/mockups/scriptloop-logos/SlimS.tsx": () => import("../components/mockups/scriptloop-logos/SlimS.tsx"),
   "./components/mockups/scriptloop-logos/TiltedS.tsx": () => import("../components/mockups/scriptloop-logos/TiltedS.tsx"),
   "./components/mockups/scriptloop-logos/VerticalMobius.tsx": () => import("../components/mockups/scriptloop-logos/VerticalMobius.tsx"),
-  "./components/mockups/scriptloop-pro/Dashboard.tsx": () => import("../components/mockups/scriptloop-pro/Dashboard.tsx"),
-  "./components/mockups/scriptloop-pro/ScriptDetail.tsx": () => import("../components/mockups/scriptloop-pro/ScriptDetail.tsx"),
-  "./components/mockups/scriptloop-pro/ZenMode.tsx": () => import("../components/mockups/scriptloop-pro/ZenMode.tsx"),
   "./components/mockups/scriptloop-minimal/Dashboard.tsx": () => import("../components/mockups/scriptloop-minimal/Dashboard.tsx"),
   "./components/mockups/scriptloop-minimal/ScriptDetail.tsx": () => import("../components/mockups/scriptloop-minimal/ScriptDetail.tsx"),
-  "./components/mockups/scriptloop-minimal/ZenMode.tsx": () => import("../components/mockups/scriptloop-minimal/ZenMode.tsx")
+  "./components/mockups/scriptloop-minimal/ZenMode.tsx": () => import("../components/mockups/scriptloop-minimal/ZenMode.tsx"),
+  "./components/mockups/scriptloop-pro/Dashboard.tsx": () => import("../components/mockups/scriptloop-pro/Dashboard.tsx"),
+  "./components/mockups/scriptloop-pro/ScriptDetail.tsx": () => import("../components/mockups/scriptloop-pro/ScriptDetail.tsx"),
+  "./components/mockups/scriptloop-pro/ZenMode.tsx": () => import("../components/mockups/scriptloop-pro/ZenMode.tsx")
 };
