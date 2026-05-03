@@ -2,11 +2,14 @@ import { Link, useNavigate } from "react-router-dom";
 import { authClient } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
 import { BrandMark, BRAND } from "@/lib/brand";
+import { useMe } from "@/lib/api";
 
 export function AppHeader() {
   const session = authClient.useSession();
+  const me = useMe();
   const navigate = useNavigate();
   const user = session.data?.user;
+  const isAdmin = me.data?.isAdmin ?? false;
 
   const handleSignOut = async () => {
     try {
@@ -39,6 +42,11 @@ export function AppHeader() {
           <Button variant="ghost" size="sm" asChild>
             <Link to="/settings">Settings</Link>
           </Button>
+          {isAdmin && (
+            <Button variant="ghost" size="sm" asChild>
+              <Link to="/admin">Admin</Link>
+            </Button>
+          )}
           {user?.email && (
             <span className="hidden text-sm text-muted-foreground sm:inline">
               {user.email}

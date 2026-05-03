@@ -2,7 +2,7 @@ import {
   attachAudioToScript,
   getScriptForUser,
 } from "../../src/lib/scripts-server";
-import { getSession } from "./_lib/session";
+import { requireActiveSession } from "./_lib/session";
 import { withSentry, captureFunctionError } from "./_lib/sentry";
 import { checkAndIncrement, rateLimitResponse } from "./_lib/rateLimit";
 import {
@@ -24,8 +24,8 @@ const handler = async (req: Request): Promise<Response> => {
     return errorResponse(405, "method_not_allowed", "Method not allowed.");
   }
 
-  const session = await getSession(req);
-  if (!session) return errorResponse(401, "unauthorized", "Sign in to continue.");
+  const session = await requireActiveSession(req);
+  if (session instanceof Response) return session;
 
   const configError = checkAudioConfig();
   if (configError) return errorResponse(500, "not_configured", configError);

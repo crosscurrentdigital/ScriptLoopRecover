@@ -1,6 +1,6 @@
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { getSession } from "./_lib/session";
+import { requireActiveSession } from "./_lib/session";
 import { withSentry } from "./_lib/sentry";
 import { errorResponse, parseJsonBody, presignSchema } from "./_lib/schemas";
 
@@ -18,10 +18,8 @@ const handler = async (req: Request): Promise<Response> => {
     return errorResponse(405, "method_not_allowed", "Method not allowed.");
   }
 
-  const session = await getSession(req);
-  if (!session) {
-    return errorResponse(401, "unauthorized", "Sign in to continue.");
-  }
+  const session = await requireActiveSession(req);
+  if (session instanceof Response) return session;
 
   const parsed = await parseJsonBody(req, presignSchema);
   if (!parsed.ok) return parsed.response;

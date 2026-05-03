@@ -295,6 +295,139 @@ export function generateAudioRequest(input: {
   });
 }
 
+export interface MeResponse {
+  userId: string;
+  email: string;
+  isAdmin: boolean;
+  disabled: boolean;
+}
+
+export function useMe(options: { enabled?: boolean } = {}) {
+  // Defaults to enabled so existing callers keep working, but pages
+  // gated behind RequireAuth pass `enabled: hasSession` to avoid an
+  // unauthenticated /api/me call while the auth session is still
+  // bootstrapping (which would otherwise 401 and pollute the cache).
+  return useQuery({
+    queryKey: ["me"],
+    queryFn: () => http<MeResponse>("/api/me"),
+    staleTime: 60_000,
+    retry: false,
+    enabled: options.enabled ?? true,
+  });
+}
+
+export interface AdminOverview {
+  totalUsers: number;
+  totalScripts: number;
+  scriptsLast7Days: number;
+  scriptsLast30Days: number;
+  totalAdmins: number;
+}
+
+export interface AdminUserRow {
+  id: string;
+  email: string;
+  name: string;
+  createdAt: string;
+  isAdmin: boolean;
+  disabled: boolean;
+  scriptCount: number;
+}
+
+export interface AdminUsersResponse {
+  users: AdminUserRow[];
+  page: number;
+  pageSize: number;
+  total: number;
+}
+
+export interface AdminUserDetailResponse {
+  user: Omit<AdminUserRow, "scriptCount">;
+  scripts: Script[];
+}
+
+export function useAdminOverview(enabled: boolean) {
+  return useQuery({
+    queryKey: ["admin", "overview"],
+    queryFn: () => http<AdminOverview>("/api/admin/overview"),
+    enabled,
+  });
+}
+
+export function useAdminUsers(
+  params: { q?: string; page: number; pageSize: number },
+  enabled: boolean,
+) {
+  const search = new URLSearchParams();
+  if (params.q) search.set("q", params.q);
+  search.set("page", String(params.page));
+  search.set("pageSize", String(params.pageSize));
+  return useQuery({
+    queryKey: ["admin", "users", params],
+    queryFn: () =>
+      http<AdminUsersResponse>(`/api/admin/users?${search.toString()}`),
+    enabled,
+  });
+}
+
+export function useAdminUserDetail(userId: string | undefined) {
+  return useQuery({
+    queryKey: ["admin", "users", userId],
+    queryFn: () =>
+      http<AdminUserDetailResponse>(`/api/admin/users/${userId}`),
+    enabled: !!userId,
+  });
+}
+
+function adminAction(userId: string, action: string) {
+  return http<{ ok: true }>(`/api/admin/users/${userId}/${action}`, {
+    method: "POST",
+  });
+}
+
+export function useAdminUserAction() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      userId,
+      action,
+    }: {
+      userId: string;
+      action: "promote" | "demote" | "disable" | "enable";
+    }) => adminAction(userId, action),
+    onSuccess: (_data, { userId }) => {
+      qc.invalidateQueries({ queryKey: ["admin", "users"] });
+      qc.invalidateQueries({ queryKey: ["admin", "users", userId] });
+      qc.invalidateQueries({ queryKey: ["admin", "overview"] });
+    },
+  });
+}
+
+export function useAdminDeleteUser() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (userId: string) =>
+      http<void>(`/api/admin/users/${userId}`, { method: "DELETE" }),
+    onSuccess: (_d, userId) => {
+      qc.invalidateQueries({ queryKey: ["admin", "users"] });
+      qc.removeQueries({ queryKey: ["admin", "users", userId] });
+      qc.invalidateQueries({ queryKey: ["admin", "overview"] });
+    },
+  });
+}
+
+export function useAdminDeleteScript() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (scriptId: number) =>
+      http<void>(`/api/admin/scripts/${scriptId}`, { method: "DELETE" }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin", "users"] });
+      qc.invalidateQueries({ queryKey: ["admin", "overview"] });
+    },
+  });
+}
+
 export function useGenerateAudio(scriptId: number) {
   const qc = useQueryClient();
   return useMutation({

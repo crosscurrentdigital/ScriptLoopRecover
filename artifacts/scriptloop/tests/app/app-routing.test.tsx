@@ -7,6 +7,14 @@ const useSessionMock = vi.fn();
 vi.mock("@/lib/auth-client", () => ({
   authClient: { useSession: useSessionMock },
 }));
+vi.mock("@/lib/api", () => ({
+  useMe: () => ({
+    data: { isAdmin: false, disabled: false, userId: "u", email: "u@x.com" },
+    isLoading: false,
+    error: null,
+  }),
+  ApiError: class extends Error {},
+}));
 vi.mock("@neondatabase/auth/react/ui", () => ({
   NeonAuthUIProvider: ({ children }: { children: React.ReactNode }) => (
     <>{children}</>

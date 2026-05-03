@@ -8,6 +8,17 @@ vi.mock("@/lib/auth-client", () => ({
   authClient: { useSession: useSessionMock, signOut: signOutMock },
 }));
 
+// AppHeader calls useMe() to decide whether to show the Admin link.
+// We don't exercise that path here; stub it to "not admin, not loading".
+vi.mock("@/lib/api", () => ({
+  useMe: () => ({
+    data: { isAdmin: false, disabled: false, userId: "u", email: "u@x.com" },
+    isLoading: false,
+    error: null,
+  }),
+  ApiError: class extends Error {},
+}));
+
 const { AppHeader } = await import("@/components/AppHeader");
 
 beforeEach(() => {

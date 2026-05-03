@@ -85,3 +85,15 @@ export const userPreferences = pgTable("user_preferences", {
 });
 
 export type UserPreferences = typeof userPreferences.$inferSelect;
+
+export const userProfiles = pgTable("user_profiles", {
+  userId: uuid("user_id")
+    .primaryKey()
+    .references(() => authUser.id, { onDelete: "cascade" }),
+  isAdmin: boolean("is_admin").notNull().default(false),
+  disabled: boolean("disabled").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+});
+
+export type UserProfile = typeof userProfiles.$inferSelect;

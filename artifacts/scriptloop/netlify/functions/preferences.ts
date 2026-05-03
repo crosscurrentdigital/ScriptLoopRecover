@@ -2,7 +2,7 @@ import { z } from "zod";
 import { eq } from "drizzle-orm";
 import { db } from "../../src/db/index";
 import { userPreferences } from "../../src/db/schema";
-import { getSession } from "./_lib/session";
+import { requireActiveSession } from "./_lib/session";
 import { withSentry } from "./_lib/sentry";
 import {
   errorResponse,
@@ -19,11 +19,9 @@ const updatePreferencesSchema = z
   .strict();
 
 const handler = async (req: Request): Promise<Response> => {
-  const session = await getSession(req);
-  if (!session) {
-    return errorResponse(401, "unauthorized", "Sign in to continue.");
-  }
-  const userId = session.userId;
+  const sessionResult = await requireActiveSession(req);
+  if (sessionResult instanceof Response) return sessionResult;
+  const userId = sessionResult.userId;
 
   if (req.method === "GET") {
     const [row] = await db

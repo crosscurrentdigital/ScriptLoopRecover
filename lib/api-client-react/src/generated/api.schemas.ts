@@ -5,6 +5,80 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export interface OkResponse {
+  ok: boolean;
+}
+
+export interface MeResponse {
+  userId: string;
+  email: string;
+  isAdmin: boolean;
+  disabled: boolean;
+}
+
+export interface AdminOverview {
+  /** @minimum 0 */
+  totalUsers: number;
+  /** @minimum 0 */
+  totalScripts: number;
+  /** @minimum 0 */
+  scriptsLast7Days: number;
+  /** @minimum 0 */
+  scriptsLast30Days: number;
+  /** @minimum 0 */
+  totalAdmins: number;
+}
+
+export interface AdminUser {
+  id: string;
+  email: string;
+  name?: string | null;
+  isAdmin: boolean;
+  disabled: boolean;
+  createdAt?: string | null;
+  /** @minimum 0 */
+  scriptCount: number;
+}
+
+export interface AdminUsersPage {
+  users: AdminUser[];
+  /** @minimum 1 */
+  page: number;
+  /** @minimum 1 */
+  pageSize: number;
+  /** @minimum 0 */
+  total: number;
+}
+
+export interface AdminUserDetailUser {
+  id: string;
+  email: string;
+  name?: string | null;
+  isAdmin: boolean;
+  disabled: boolean;
+  createdAt?: string | null;
+}
+
+/**
+ * Full script row (see Drizzle schema for fields).
+ */
+export type AdminUserDetailScriptsItem = { [key: string]: unknown };
+
+export interface AdminUserDetail {
+  user: AdminUserDetailUser;
+  scripts: AdminUserDetailScriptsItem[];
+}
+
+export interface AdminRoleResult {
+  ok: boolean;
+  isAdmin: boolean;
+}
+
+export interface AdminDisabledResult {
+  ok: boolean;
+  disabled: boolean;
+}
+
 export interface HealthStatus {
   status: string;
 }
@@ -49,3 +123,23 @@ export interface PreferencesEnvelope {
 export type UpdateReadingPreferencesBody = {
   reading: ReadingPreferences;
 };
+
+export type ListAdminUsersParams = {
+  q?: string;
+  /**
+   * @minimum 1
+   */
+  page?: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  pageSize?: number;
+};
+
+/**
+ * Same shape as PUT /api/scripts/{id}
+ */
+export type UpdateAdminScriptBody = { [key: string]: unknown };
+
+export type UpdateAdminScript200 = { [key: string]: unknown };

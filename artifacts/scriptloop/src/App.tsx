@@ -19,6 +19,10 @@ import { Footer } from "@/components/Footer";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { SentryTestTrigger } from "@/components/SentryTestTrigger";
 import SettingsPage from "@/pages/SettingsPage";
+import AdminOverviewPage from "@/pages/AdminOverviewPage";
+import AdminUsersPage from "@/pages/AdminUsersPage";
+import AdminUserDetailPage from "@/pages/AdminUserDetailPage";
+import { RequireAdmin } from "@/components/RequireAdmin";
 import { ReadingPreferencesProvider } from "@/hooks/useReadingPreferences";
 
 const queryClient = new QueryClient();
@@ -131,6 +135,36 @@ function AppRoutes() {
           element={
             <ProtectedRoute withFooter>
               <SettingsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute withFooter>
+              <RequireAdmin>
+                <AdminOverviewPage />
+              </RequireAdmin>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/users"
+          element={
+            <ProtectedRoute withFooter>
+              <RequireAdmin>
+                <AdminUsersPage />
+              </RequireAdmin>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/users/:id"
+          element={
+            <ProtectedRoute withFooter>
+              <RequireAdmin>
+                <AdminUserDetailPage />
+              </RequireAdmin>
             </ProtectedRoute>
           }
         />

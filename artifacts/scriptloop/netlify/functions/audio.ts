@@ -1,5 +1,5 @@
 import { getVoices } from "../../src/lib/elevenlabs";
-import { getSession } from "./_lib/session";
+import { requireActiveSession } from "./_lib/session";
 import { withSentry, captureFunctionError } from "./_lib/sentry";
 import { getRateLimitStatus } from "./_lib/rateLimit";
 import { errorResponse } from "./_lib/schemas";
@@ -10,8 +10,8 @@ const ROUTE = "GET /api/audio/*";
 const GENERATE_AUDIO_ROUTE = "generate-audio";
 
 const handler = async (req: Request): Promise<Response> => {
-  const session = await getSession(req);
-  if (!session) return errorResponse(401, "unauthorized", "Sign in to continue.");
+  const session = await requireActiveSession(req);
+  if (session instanceof Response) return session;
 
   const url = new URL(req.url);
   const isQuota = url.pathname.endsWith("/quota");

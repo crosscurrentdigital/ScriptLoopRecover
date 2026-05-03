@@ -155,3 +155,187 @@ export const UpdateReadingPreferencesResponse = zod.object({
     zod.null(),
   ]),
 });
+
+/**
+ * @summary Identity for the signed-in (and active) user
+ */
+export const GetMeResponse = zod.object({
+  userId: zod.string().uuid(),
+  email: zod.string(),
+  isAdmin: zod.boolean(),
+  disabled: zod.boolean(),
+});
+
+/**
+ * @summary High-level counts for the admin dashboard
+ */
+export const getAdminOverviewResponseTotalUsersMin = 0;
+
+export const getAdminOverviewResponseTotalScriptsMin = 0;
+
+export const getAdminOverviewResponseScriptsLast7DaysMin = 0;
+
+export const getAdminOverviewResponseScriptsLast30DaysMin = 0;
+
+export const getAdminOverviewResponseTotalAdminsMin = 0;
+
+export const GetAdminOverviewResponse = zod.object({
+  totalUsers: zod.number().min(getAdminOverviewResponseTotalUsersMin),
+  totalScripts: zod.number().min(getAdminOverviewResponseTotalScriptsMin),
+  scriptsLast7Days: zod
+    .number()
+    .min(getAdminOverviewResponseScriptsLast7DaysMin),
+  scriptsLast30Days: zod
+    .number()
+    .min(getAdminOverviewResponseScriptsLast30DaysMin),
+  totalAdmins: zod.number().min(getAdminOverviewResponseTotalAdminsMin),
+});
+
+/**
+ * @summary Paginated, searchable list of users
+ */
+export const listAdminUsersQueryPageDefault = 1;
+
+export const listAdminUsersQueryPageSizeDefault = 25;
+export const listAdminUsersQueryPageSizeMax = 100;
+
+export const ListAdminUsersQueryParams = zod.object({
+  q: zod.coerce.string().optional(),
+  page: zod.coerce.number().min(1).default(listAdminUsersQueryPageDefault),
+  pageSize: zod.coerce
+    .number()
+    .min(1)
+    .max(listAdminUsersQueryPageSizeMax)
+    .default(listAdminUsersQueryPageSizeDefault),
+});
+
+export const listAdminUsersResponseUsersItemScriptCountMin = 0;
+
+export const listAdminUsersResponseTotalMin = 0;
+
+export const ListAdminUsersResponse = zod.object({
+  users: zod.array(
+    zod.object({
+      id: zod.string().uuid(),
+      email: zod.string(),
+      name: zod.union([zod.string(), zod.null()]).optional(),
+      isAdmin: zod.boolean(),
+      disabled: zod.boolean(),
+      createdAt: zod.union([zod.coerce.date(), zod.null()]).optional(),
+      scriptCount: zod
+        .number()
+        .min(listAdminUsersResponseUsersItemScriptCountMin),
+    }),
+  ),
+  page: zod.number().min(1),
+  pageSize: zod.number().min(1),
+  total: zod.number().min(listAdminUsersResponseTotalMin),
+});
+
+/**
+ * @summary Single user with their scripts
+ */
+export const GetAdminUserDetailParams = zod.object({
+  userId: zod.coerce.string().uuid(),
+});
+
+export const GetAdminUserDetailResponse = zod.object({
+  user: zod.object({
+    id: zod.string().uuid(),
+    email: zod.string(),
+    name: zod.union([zod.string(), zod.null()]).optional(),
+    isAdmin: zod.boolean(),
+    disabled: zod.boolean(),
+    createdAt: zod.union([zod.coerce.date(), zod.null()]).optional(),
+  }),
+  scripts: zod.array(
+    zod
+      .object({})
+      .passthrough()
+      .describe("Full script row (see Drizzle schema for fields)."),
+  ),
+});
+
+/**
+ * @summary Delete a user (cascades scripts, preferences, profile)
+ */
+export const DeleteAdminUserParams = zod.object({
+  userId: zod.coerce.string().uuid(),
+});
+
+export const DeleteAdminUserResponse = zod.object({
+  ok: zod.boolean(),
+});
+
+/**
+ * @summary Grant admin role
+ */
+export const PromoteAdminUserParams = zod.object({
+  userId: zod.coerce.string().uuid(),
+});
+
+export const PromoteAdminUserResponse = zod.object({
+  ok: zod.boolean(),
+  isAdmin: zod.boolean(),
+});
+
+/**
+ * @summary Revoke admin role
+ */
+export const DemoteAdminUserParams = zod.object({
+  userId: zod.coerce.string().uuid(),
+});
+
+export const DemoteAdminUserResponse = zod.object({
+  ok: zod.boolean(),
+  isAdmin: zod.boolean(),
+});
+
+/**
+ * @summary Disable a user (blocks all API access)
+ */
+export const DisableAdminUserParams = zod.object({
+  userId: zod.coerce.string().uuid(),
+});
+
+export const DisableAdminUserResponse = zod.object({
+  ok: zod.boolean(),
+  disabled: zod.boolean(),
+});
+
+/**
+ * @summary Re-enable a previously disabled user
+ */
+export const EnableAdminUserParams = zod.object({
+  userId: zod.coerce.string().uuid(),
+});
+
+export const EnableAdminUserResponse = zod.object({
+  ok: zod.boolean(),
+  disabled: zod.boolean(),
+});
+
+/**
+ * @summary Update any user's script as an admin
+ */
+
+export const UpdateAdminScriptParams = zod.object({
+  scriptId: zod.coerce.number().min(1),
+});
+
+export const UpdateAdminScriptBody = zod
+  .record(zod.string(), zod.unknown())
+  .describe("Same shape as PUT \/api\/scripts\/{id}");
+
+export const UpdateAdminScriptResponse = zod.record(
+  zod.string(),
+  zod.unknown(),
+);
+
+/**
+ * @summary Delete any user's script as an admin
+ */
+
+export const DeleteAdminScriptParams = zod.object({
+  scriptId: zod.coerce.number().min(1),
+});

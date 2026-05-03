@@ -12,6 +12,10 @@ tags:
     description: Health operations
   - name: preferences
     description: Per-user reading preferences
+  - name: me
+    description: Signed-in identity
+  - name: admin
+    description: Admin console (admin-only; disabled accounts blocked everywhere)
 paths:
   /healthz:
     get:
@@ -66,8 +70,321 @@ paths:
           description: Invalid request
         "401":
           description: Unauthorized
+  /me:
+    get:
+      operationId: getMe
+      tags: [me]
+      summary: Identity for the signed-in (and active) user
+      responses:
+        "200":
+          description: Identity
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MeResponse"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Account disabled (code "account_disabled")
+  /admin/overview:
+    get:
+      operationId: getAdminOverview
+      tags: [admin]
+      summary: High-level counts for the admin dashboard
+      responses:
+        "200":
+          description: Overview
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminOverview"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden (not admin or account disabled)
+  /admin/users:
+    get:
+      operationId: listAdminUsers
+      tags: [admin]
+      summary: Paginated, searchable list of users
+      parameters:
+        - in: query
+          name: q
+          schema: { type: string }
+          required: false
+        - in: query
+          name: page
+          schema: { type: integer, minimum: 1, default: 1 }
+          required: false
+        - in: query
+          name: pageSize
+          schema: { type: integer, minimum: 1, maximum: 100, default: 25 }
+          required: false
+      responses:
+        "200":
+          description: Users
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUsersPage"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+  /admin/users/{userId}:
+    get:
+      operationId: getAdminUserDetail
+      tags: [admin]
+      summary: Single user with their scripts
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: User detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUserDetail"
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteAdminUser
+      tags: [admin]
+      summary: Delete a user (cascades scripts, preferences, profile)
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkResponse"
+        "400":
+          description: Self-action forbidden (code "self_action_forbidden")
+        "404":
+          description: Not found
+  /admin/users/{userId}/promote:
+    post:
+      operationId: promoteAdminUser
+      tags: [admin]
+      summary: Grant admin role
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminRoleResult"
+  /admin/users/{userId}/demote:
+    post:
+      operationId: demoteAdminUser
+      tags: [admin]
+      summary: Revoke admin role
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminRoleResult"
+        "400":
+          description: Self-action forbidden
+  /admin/users/{userId}/disable:
+    post:
+      operationId: disableAdminUser
+      tags: [admin]
+      summary: Disable a user (blocks all API access)
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminDisabledResult"
+        "400":
+          description: Self-action forbidden
+  /admin/users/{userId}/enable:
+    post:
+      operationId: enableAdminUser
+      tags: [admin]
+      summary: Re-enable a previously disabled user
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminDisabledResult"
+  /admin/scripts/{scriptId}:
+    put:
+      operationId: updateAdminScript
+      tags: [admin]
+      summary: Update any user's script as an admin
+      parameters:
+        - in: path
+          name: scriptId
+          required: true
+          schema: { type: integer, minimum: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Same shape as PUT /api/scripts/{id}
+              additionalProperties: true
+      responses:
+        "200":
+          description: Updated script row
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteAdminScript
+      tags: [admin]
+      summary: Delete any user's script as an admin
+      parameters:
+        - in: path
+          name: scriptId
+          required: true
+          schema: { type: integer, minimum: 1 }
+      responses:
+        "204":
+          description: Deleted
 components:
   schemas:
+    OkResponse:
+      type: object
+      additionalProperties: false
+      required: [ok]
+      properties:
+        ok: { type: boolean }
+    MeResponse:
+      type: object
+      additionalProperties: false
+      required: [userId, email, isAdmin, disabled]
+      properties:
+        userId: { type: string, format: uuid }
+        email: { type: string }
+        isAdmin: { type: boolean }
+        disabled: { type: boolean }
+    AdminOverview:
+      type: object
+      additionalProperties: false
+      required:
+        - totalUsers
+        - totalScripts
+        - scriptsLast7Days
+        - scriptsLast30Days
+        - totalAdmins
+      properties:
+        totalUsers: { type: integer, minimum: 0 }
+        totalScripts: { type: integer, minimum: 0 }
+        scriptsLast7Days: { type: integer, minimum: 0 }
+        scriptsLast30Days: { type: integer, minimum: 0 }
+        totalAdmins: { type: integer, minimum: 0 }
+    AdminUser:
+      type: object
+      additionalProperties: false
+      required: [id, email, isAdmin, disabled, scriptCount]
+      properties:
+        id: { type: string, format: uuid }
+        email: { type: string }
+        name:
+          oneOf:
+            - { type: string }
+            - { type: "null" }
+        isAdmin: { type: boolean }
+        disabled: { type: boolean }
+        createdAt:
+          oneOf:
+            - { type: string, format: date-time }
+            - { type: "null" }
+        scriptCount: { type: integer, minimum: 0 }
+    AdminUsersPage:
+      type: object
+      additionalProperties: false
+      required: [users, page, pageSize, total]
+      properties:
+        users:
+          type: array
+          items: { $ref: "#/components/schemas/AdminUser" }
+        page: { type: integer, minimum: 1 }
+        pageSize: { type: integer, minimum: 1 }
+        total: { type: integer, minimum: 0 }
+    AdminUserDetailUser:
+      type: object
+      additionalProperties: false
+      required: [id, email, isAdmin, disabled]
+      properties:
+        id: { type: string, format: uuid }
+        email: { type: string }
+        name:
+          oneOf:
+            - { type: string }
+            - { type: "null" }
+        isAdmin: { type: boolean }
+        disabled: { type: boolean }
+        createdAt:
+          oneOf:
+            - { type: string, format: date-time }
+            - { type: "null" }
+    AdminUserDetail:
+      type: object
+      additionalProperties: false
+      required: [user, scripts]
+      properties:
+        user: { $ref: "#/components/schemas/AdminUserDetailUser" }
+        scripts:
+          type: array
+          items:
+            type: object
+            description: Full script row (see Drizzle schema for fields).
+    AdminRoleResult:
+      type: object
+      additionalProperties: false
+      required: [ok, isAdmin]
+      properties:
+        ok: { type: boolean }
+        isAdmin: { type: boolean }
+    AdminDisabledResult:
+      type: object
+      additionalProperties: false
+      required: [ok, disabled]
+      properties:
+        ok: { type: boolean }
+        disabled: { type: boolean }
     HealthStatus:
       type: object
       properties:

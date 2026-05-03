@@ -87,6 +87,15 @@ artifacts/scriptloop/
   netlify.toml
 ```
 
+## Admin
+
+- A two-role model (`user`, `admin`) lives in the `user_profiles` table (keyed by `userId`, FK to `neon_auth.user` with cascade delete). Profiles are created lazily on first sign-in by `getSession`.
+- `ADMIN_EMAIL` env var (default `cbutcher@cruciblelab.org`) auto-promotes the matching account on every sign-in.
+- `requireActiveSession(req)` rejects disabled accounts with 403 `account_disabled`; `requireAdmin(req)` additionally enforces `isAdmin`.
+- Admin endpoints live behind `/api/admin/*` (overview, users list/detail, promote/demote/disable/enable/delete user, edit/delete any script). Admins also bypass per-script ownership checks in `/api/scripts/*` so the existing detail/editor pages work from the admin user-detail view.
+- Client surfaces: `useMe()` returns `{ isAdmin, disabled }`; `RequireAdmin` guard, `Admin` nav link, and pages under `/admin`, `/admin/users`, `/admin/users/:id`. Destructive actions use `ConfirmTypedDialog` (typed-confirmation).
+- Admins cannot demote/disable/delete themselves.
+
 ## Auth
 
 Auth is handled end-to-end by **Neon Auth** (`@neondatabase/auth`, a

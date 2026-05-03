@@ -11,6 +11,17 @@ vi.mock("@/lib/auth-client", () => ({
   },
 }));
 
+// RequireAuth now also calls useMe() to detect disabled accounts. Keep
+// it stubbed so these routing tests stay focused on the session flow.
+vi.mock("@/lib/api", () => ({
+  useMe: () => ({
+    data: { isAdmin: false, disabled: false, userId: "u", email: "u@x.com" },
+    isLoading: false,
+    error: null,
+  }),
+  ApiError: class extends Error {},
+}));
+
 const { RequireAuth, PublicRoute } = await import(
   "@/components/RequireAuth"
 );

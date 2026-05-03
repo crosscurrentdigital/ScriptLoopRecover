@@ -4,14 +4,8 @@ import { DEFAULT_PREFERENCES } from "@/lib/reading-preferences";
 
 vi.mock("../../src/db/index", () => ({ db: fakeDb }));
 
-const sessionMock = {
-  getSession: vi.fn(),
-  jsonResponse: (body: unknown, status = 200) =>
-    new Response(JSON.stringify(body), {
-      status,
-      headers: { "Content-Type": "application/json" },
-    }),
-};
+import { makeSessionMock } from "../helpers/sessionMock";
+const sessionMock = makeSessionMock();
 vi.mock("../../netlify/functions/_lib/session", () => sessionMock);
 
 const preferencesHandler = (

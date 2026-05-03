@@ -1,7 +1,7 @@
 import { db } from "../../src/db/index";
 import { scripts } from "../../src/db/schema";
 import { and, eq } from "drizzle-orm";
-import { getSession } from "./_lib/session";
+import { requireActiveSession } from "./_lib/session";
 import { withSentry, captureFunctionError } from "./_lib/sentry";
 import { checkAndIncrement, rateLimitResponse } from "./_lib/rateLimit";
 import {
@@ -23,13 +23,14 @@ import {
 const ROUTE = "/api/scripts/*";
 
 const handler = async (req: Request): Promise<Response> => {
-  const session = await getSession(req);
-
-  if (!session) {
-    return errorResponse(401, "unauthorized", "Sign in to continue.");
-  }
-
-  const userId = session.userId;
+  const sessionResult = await requireActiveSession(req);
+  if (sessionResult instanceof Response) return sessionResult;
+  const userId = sessionResult.userId;
+  const isAdmin = sessionResult.isAdmin;
+  // Admins can read/update/delete any user's scripts so the existing
+  // detail/editor pages work from the admin user-detail view without
+  // duplicating the entire UI behind a separate set of admin-only
+  // endpoints. Ownership-restricted writes still apply to non-admins.
   const url = new URL(req.url);
   const pathParts = url.pathname.split("/").filter(Boolean);
   const lastSegment = pathParts[pathParts.length - 1];
@@ -54,7 +55,7 @@ const handler = async (req: Request): Promise<Response> => {
         .from(scripts)
         .where(eq(scripts.id, scriptId));
 
-      if (!script || script.userId !== userId) {
+      if (!script || (script.userId !== userId && !isAdmin)) {
         return errorResponse(404, "not_found", "Script not found.");
       }
 
@@ -145,19 +146,23 @@ const handler = async (req: Request): Promise<Response> => {
     // the unguessable R2 key shape and the per-user rate limits. If
     // this ever matters, switch to `SELECT … FOR UPDATE` here and in
     // generate-audio together.
+    const ownershipFilter = isAdmin
+      ? eq(scripts.id, scriptId)
+      : and(eq(scripts.id, scriptId), eq(scripts.userId, userId));
+
     let previousAudioUrl: string | null = null;
     if (body.audioUrl !== undefined) {
       const existing = await db
         .select({ audioUrl: scripts.audioUrl })
         .from(scripts)
-        .where(and(eq(scripts.id, scriptId), eq(scripts.userId, userId)));
+        .where(ownershipFilter);
       previousAudioUrl = existing[0]?.audioUrl ?? null;
     }
 
     const [updated] = await db
       .update(scripts)
       .set({ ...body, updatedAt: new Date() })
-      .where(and(eq(scripts.id, scriptId), eq(scripts.userId, userId)))
+      .where(ownershipFilter)
       .returning();
 
     if (!updated) {
@@ -192,7 +197,11 @@ const handler = async (req: Request): Promise<Response> => {
     }
     const deleted = await db
       .delete(scripts)
-      .where(and(eq(scripts.id, scriptId), eq(scripts.userId, userId)))
+      .where(
+        isAdmin
+          ? eq(scripts.id, scriptId)
+          : and(eq(scripts.id, scriptId), eq(scripts.userId, userId)),
+      )
       .returning({ id: scripts.id });
 
     if (deleted.length === 0) {
