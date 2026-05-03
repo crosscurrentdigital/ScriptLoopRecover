@@ -16,7 +16,7 @@ const Mark: React.FC<MarkProps> = ({
     {/* Teal "back of ribbon" — connects the bottom-left tip of S to the top-right tip,
         passing BEHIND the S center. Together they form a single closed Möbius loop. */}
     <path
-      d="M 12,46 C 28,52 52,40 52,18"
+      d="M 12,46 C 12,32 52,32 52,18"
       stroke={secondary}
       strokeWidth="8"
     />

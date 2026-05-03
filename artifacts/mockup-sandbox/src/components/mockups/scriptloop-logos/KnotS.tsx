@@ -15,7 +15,7 @@ const Mark: React.FC<MarkProps> = ({
   >
     {/* Teal back-arc — wraps around the LEFT side, the mirror of variation C */}
     <path
-      d="M 12,46 C 0,28 28,8 52,18"
+      d="M 12,46 C 4,28 60,36 52,18"
       stroke={secondary}
       strokeWidth="7"
     />
