@@ -1,0 +1,40 @@
+Create a new public GitHub repo called <REPO_NAME> under my account and push the current Replit project's main branch to it. Use the Replit GitHub integration — do not ask me for a personal access token.
+Steps you should take:
+Make sure the GitHub integration is connected. In the code-execution sandbox, run:
+const r = await searchIntegrations({ query: "github" });
+console.log(JSON.stringify(r, null, 2));
+If the GitHub entry has status: "not_added", call addIntegration(<id>) then proposeIntegration(<id>) and wait for me to complete OAuth.
+Once connected, get the OAuth token from the connection settings:
+const conns = await listConnections('github');
+const token = conns[0].settings.access_token;
+Look up my GitHub login and create a new public repo named <REPO_NAME>:
+const u = await fetch("https://api.github.com/user", {
+  headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json" },
+}).then(r => r.json());
+const create = await fetch("https://api.github.com/user/repos", {
+  method: "POST",
+  headers: {
+    Authorization: `Bearer ${token}`,
+    Accept: "application/vnd.github+json",
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    name: "<REPO_NAME>",
+    description: "<SHORT_DESCRIPTION>",
+    private: false,
+    auto_init: false,
+  }),
+}).then(r => r.json());
+const fullName = `${u.login}/<REPO_NAME>`;
+Push the current main branch (don't persist the token in git remote add — embed it inline so it's not saved to .git/config):
+const { execSync } = await import("node:child_process");
+execSync(
+  `git push https://x-access-token:${token}@github.com/${fullName}.git main:main`,
+  { cwd: "/home/runner/workspace", env: { ...process.env, GIT_TERMINAL_PROMPT: "0" } }
+);
+Print the repo URL https://github.com/${fullName} so I can open it.
+Notes:
+Never echo the token to logs — strip it from any captured stderr before printing.
+Before this, ask me whether the repo should be public or private.
+Before pushing, confirm the working tree is clean with git --no-optional-locks status --short. If there are uncommitted changes, ask me whether to commit them first.
+Replace <REPO_NAME> and <SHORT_DESCRIPTION> with whatever you want. That's the entire flow I used.
