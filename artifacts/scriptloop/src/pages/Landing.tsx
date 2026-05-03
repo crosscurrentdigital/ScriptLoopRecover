@@ -33,30 +33,33 @@ export default function Landing() {
     >
       {/* HEADER */}
       <header className="border-b border-zinc-200 bg-[color:var(--paper,#FAFAFA)]">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-6 py-5 sm:px-12 sm:py-6">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-6 py-5 md:px-10 md:py-6">
           <Link
             to="/"
-            className="inline-flex min-h-11 items-center gap-2 text-zinc-900 active:opacity-80 sm:min-h-0 sm:hover:opacity-80"
+            className="inline-flex min-h-11 items-center gap-2 text-zinc-900 active:opacity-80 md:min-h-0 md:hover:opacity-80"
             aria-label={`${BRAND.name} home`}
           >
             <BrandMark className="h-7 w-7" title={`${BRAND.name} logo`} />
-            <span
-              className="text-xl font-bold tracking-tight"
-              style={font}
-            >
+            <span className="text-xl font-bold tracking-tight" style={font}>
               {BRAND.name}
             </span>
           </Link>
-          <nav className="flex items-center gap-4 text-sm font-medium text-zinc-700 sm:gap-8">
-            <a href="#method" className="hidden sm:inline hover:text-zinc-900">
+          <nav className="flex items-center gap-3 text-sm font-medium text-zinc-700 sm:gap-5 md:gap-8">
+            <a
+              href="#method"
+              className="max-md:hidden hover:text-zinc-900"
+            >
               Method
             </a>
-            <Link to="/sign-in" className="hidden sm:inline hover:text-zinc-900">
+            <Link
+              to="/sign-in"
+              className="inline-flex min-h-11 shrink-0 items-center whitespace-nowrap hover:text-zinc-900 md:min-h-0"
+            >
               Sign in
             </Link>
             <Link
               to="/sign-up"
-              className="inline-flex min-h-11 items-center rounded-full px-5 py-2.5 text-sm font-semibold text-white hover:opacity-90"
+              className="inline-flex min-h-11 shrink-0 items-center whitespace-nowrap rounded-full px-4 py-2.5 text-sm font-semibold text-white hover:opacity-90 sm:px-5"
               style={{ background: BRAND.colors.ink }}
             >
               Get started
@@ -66,45 +69,44 @@ export default function Landing() {
       </header>
 
       <main className="flex-1">
-        {/* HERO — magazine layout, oversized type, giant background mark */}
-        <section className="relative overflow-hidden px-6 pb-16 pt-12 sm:px-12 sm:pb-24 sm:pt-20">
+        {/* HERO */}
+        <section className="relative overflow-hidden px-6 pb-20 pt-14 md:px-10 md:pb-28 md:pt-20">
           <div
-            className="pointer-events-none absolute -right-32 -top-12 hidden opacity-[0.07] sm:block"
+            className="pointer-events-none absolute -right-32 -top-12 hidden opacity-[0.06] md:block"
             aria-hidden="true"
           >
-            <BrandMark
-              className="h-[700px] w-[700px]"
-              strokeWidth={5}
-            />
+            <BrandMark className="h-[600px] w-[600px]" strokeWidth={5} />
           </div>
 
-          <div className="relative mx-auto grid max-w-7xl grid-cols-12 gap-6">
-            {/* Left rail: editorial meta */}
-            <div className="col-span-12 sm:col-span-3 sm:pt-2">
-              <div className="text-[11px] uppercase tracking-[0.3em] text-zinc-400">
-                Issue №01
+          <div className="relative mx-auto grid max-w-7xl grid-cols-12 gap-x-8 gap-y-8">
+            {/* Left rail anchored to headline */}
+            <aside className="col-span-12 md:col-span-3 md:pt-3">
+              <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 md:block">
+                <div className="text-[11px] uppercase tracking-[0.3em] text-zinc-400">
+                  Issue №01
+                </div>
+                <div
+                  className="text-sm font-medium md:mt-2"
+                  style={{ color: BRAND.colors.violet }}
+                >
+                  The looping method
+                </div>
               </div>
-              <div
-                className="mt-2 text-sm font-medium"
-                style={{ color: BRAND.colors.violet }}
-              >
-                The looping method
-              </div>
-              <div className="mt-6 hidden h-px w-12 bg-zinc-300 sm:block sm:mt-8" />
-              <p className="mt-3 hidden text-xs leading-relaxed text-zinc-500 sm:block sm:mt-4">
+              <div className="mt-6 hidden h-px w-12 bg-zinc-300 md:block" />
+              <p className="mt-4 hidden text-xs leading-relaxed text-zinc-500 md:block">
                 A new way to memorize lines, lectures, scripture, and speeches —
                 built around how your brain actually consolidates language.
               </p>
-            </div>
+            </aside>
 
-            {/* Center: huge headline */}
-            <div className="col-span-12 sm:col-span-9">
+            {/* Headline + composed block */}
+            <div className="col-span-12 md:col-span-9">
               <h1
                 className="font-bold text-zinc-900"
                 style={{
                   ...font,
-                  fontSize: "clamp(56px, 9vw, 120px)",
-                  lineHeight: 0.92,
+                  fontSize: "clamp(52px, 8vw, 104px)",
+                  lineHeight: 0.94,
                   letterSpacing: "-0.04em",
                 }}
               >
@@ -123,15 +125,15 @@ export default function Landing() {
                 </span>
               </h1>
 
-              <div className="mt-8 grid grid-cols-12 items-end gap-6 sm:mt-12">
+              <div className="mt-10 max-w-2xl md:mt-14">
                 <p
-                  className="col-span-12 border-l-2 pl-5 text-base leading-relaxed text-zinc-700 sm:col-span-7 sm:text-lg"
+                  className="border-l-2 pl-5 text-base leading-relaxed text-zinc-700 md:text-lg"
                   style={{ borderColor: BRAND.colors.violet }}
                 >
                   Paste any text. Generate a voice. Loop until it lives in your
                   head. No flashcards. No notes. Just sound and recall.
                 </p>
-                <div className="col-span-12 flex flex-col items-start gap-3 sm:col-span-5">
+                <div className="mt-7 flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:gap-5">
                   <Link
                     to="/sign-up"
                     className="inline-flex items-center justify-center rounded-full px-7 py-3.5 text-base font-semibold text-white shadow-sm hover:opacity-90"
@@ -139,7 +141,7 @@ export default function Landing() {
                   >
                     Begin · 60-second setup
                   </Link>
-                  <span className="ml-2 text-xs text-zinc-500">
+                  <span className="text-xs text-zinc-500">
                     Free · No credit card
                   </span>
                 </div>
@@ -148,43 +150,36 @@ export default function Landing() {
           </div>
         </section>
 
-        {/* PULL-QUOTE BAND — uses the tagline (no fabricated testimonials) */}
+        {/* PULL-QUOTE BAND */}
         <section
-          className="border-y border-zinc-200 px-6 py-16 sm:px-12 sm:py-20"
+          className="border-y border-zinc-200 px-6 py-16 md:px-10 md:py-20"
           style={{ background: BRAND.colors.ink, color: BRAND.colors.paper }}
         >
-          <div className="mx-auto grid max-w-7xl grid-cols-12 items-center gap-6">
-            <div className="col-span-12 sm:col-span-2">
+          <div className="mx-auto max-w-7xl">
+            <figure className="mx-auto max-w-4xl">
               <BrandMark
-                className="h-12 w-12"
+                className="mb-6 h-8 w-8"
                 primary={BRAND.colors.violetLight}
                 secondary={BRAND.colors.tealLight}
               />
-            </div>
-            <div className="col-span-12 sm:col-span-10">
-              <figure>
-                <blockquote
-                  className="font-bold leading-tight tracking-tight"
-                  style={{ ...font, fontSize: "clamp(28px, 3.2vw, 40px)" }}
-                >
-                  "Memorize anything by listening to it on loop."
-                </blockquote>
-                <figcaption className="mt-4 text-sm text-zinc-400">
-                  — <cite className="not-italic">The ScriptLoop method, in one sentence.</cite>
-                </figcaption>
-              </figure>
-            </div>
+              <blockquote
+                className="font-bold leading-[1.15] tracking-tight"
+                style={{ ...font, fontSize: "clamp(26px, 3vw, 38px)" }}
+              >
+                &ldquo;Memorize anything by listening to it on loop.&rdquo;
+              </blockquote>
+              <figcaption className="mt-5 text-sm text-zinc-400">
+                — <cite className="not-italic">The ScriptLoop method, in one sentence.</cite>
+              </figcaption>
+            </figure>
           </div>
         </section>
 
-        {/* METHOD — three movements grid */}
-        <section
-          id="method"
-          className="px-6 py-16 sm:px-12 sm:py-24"
-        >
+        {/* METHOD */}
+        <section id="method" className="px-6 py-20 md:px-10 md:py-28">
           <div className="mx-auto max-w-7xl">
-            <div className="mb-10 grid grid-cols-12 gap-6 sm:mb-12">
-              <div className="col-span-12 sm:col-span-3">
+            <div className="mb-12 grid grid-cols-12 gap-x-8 gap-y-4 md:mb-16">
+              <div className="col-span-12 md:col-span-3">
                 <div className="text-[11px] uppercase tracking-[0.3em] text-zinc-400">
                   Method
                 </div>
@@ -195,38 +190,43 @@ export default function Landing() {
                   Three movements
                 </div>
               </div>
-              <div className="col-span-12 sm:col-span-9">
+              <div className="col-span-12 md:col-span-9">
                 <h2
                   className="font-bold tracking-tight text-zinc-900"
-                  style={{ fontSize: "clamp(28px, 3.2vw, 40px)" }}
+                  style={{
+                    ...font,
+                    fontSize: "clamp(32px, 4vw, 52px)",
+                    lineHeight: 1.05,
+                    letterSpacing: "-0.02em",
+                  }}
                 >
                   Listen. Hide. Loop.
                 </h2>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-px bg-zinc-200 sm:grid-cols-3">
+            <div className="grid grid-cols-1 gap-px overflow-hidden rounded-md bg-zinc-200 md:grid-cols-3">
               {MOVEMENTS.map(({ n, title, body, hue }) => (
-                <div key={title} className="bg-white p-8 sm:p-10">
+                <div key={title} className="flex flex-col bg-white p-8 md:p-10">
                   <div
-                    className="mb-5 font-bold sm:mb-6"
+                    className="mb-6 font-bold leading-none"
                     style={{
                       color: hue,
                       fontFamily: BRAND.font,
-                      fontSize: "clamp(36px, 3.5vw, 48px)",
+                      fontSize: "clamp(36px, 3.2vw, 44px)",
                     }}
                   >
                     {n}
                   </div>
                   <h3
                     className="mb-3 font-bold tracking-tight text-zinc-900"
-                    style={{ fontSize: "clamp(20px, 1.8vw, 26px)" }}
+                    style={{ fontSize: "clamp(20px, 1.6vw, 24px)" }}
                   >
                     {title}
                   </h3>
                   <p
                     className="leading-relaxed text-zinc-600"
-                    style={{ fontSize: "clamp(14px, 1.1vw, 17px)" }}
+                    style={{ fontSize: "clamp(14px, 1vw, 16px)" }}
                   >
                     {body}
                   </p>
@@ -237,12 +237,17 @@ export default function Landing() {
         </section>
 
         {/* CLOSING CTA */}
-        <section className="px-6 pb-16 sm:px-12 sm:pb-24">
-          <div className="mx-auto grid max-w-7xl grid-cols-12 items-center gap-6">
-            <div className="col-span-12 sm:col-span-7">
+        <section className="px-6 pb-20 md:px-10 md:pb-28">
+          <div className="mx-auto grid max-w-7xl grid-cols-12 items-end gap-x-8 gap-y-8 border-t border-zinc-200 pt-16 md:pt-20">
+            <div className="col-span-12 md:col-span-7">
               <h2
                 className="font-bold tracking-tight text-zinc-900"
-                style={{ fontSize: "clamp(32px, 4vw, 56px)", lineHeight: 1.05 }}
+                style={{
+                  ...font,
+                  fontSize: "clamp(32px, 3.8vw, 52px)",
+                  lineHeight: 1.05,
+                  letterSpacing: "-0.02em",
+                }}
               >
                 Your next pitch.
                 <br />
@@ -253,10 +258,10 @@ export default function Landing() {
                 </span>
               </h2>
             </div>
-            <div className="col-span-12 flex flex-col items-start gap-3 sm:col-span-5 sm:items-end">
+            <div className="col-span-12 flex flex-col items-start gap-3 md:col-span-5 md:items-end">
               <Link
                 to="/sign-up"
-                className="inline-flex items-center justify-center rounded-full px-9 py-4 text-base font-semibold text-white shadow-md hover:opacity-90 sm:text-lg"
+                className="inline-flex items-center justify-center rounded-full px-9 py-4 text-base font-semibold text-white shadow-md hover:opacity-90 md:text-lg"
                 style={{ background: BRAND.colors.violet }}
               >
                 Start memorizing — free
