@@ -14,20 +14,28 @@ export function LoopMark() {
   }) => (
     <svg
       className={className}
-      viewBox="0 0 64 64"
+      viewBox="0 0 64 40"
       fill="none"
       strokeLinecap="round"
       strokeLinejoin="round"
+      strokeWidth="5"
     >
+      {/* Left lobe — primary, drawn first (passes UNDER at the crossing) */}
       <path
-        d="M 46,16 C 62,22 62,42 46,44 C 30,46 28,32 18,48"
-        stroke={secondary}
-        strokeWidth="3.5"
-      />
-      <path
-        d="M 46,16 C 28,16 20,28 32,32 C 44,36 36,48 18,48"
+        d="M 32,20 C 32,32 8,32 8,20 C 8,8 32,8 32,20 Z"
         stroke={primary}
-        strokeWidth="5.5"
+      />
+      {/* Right lobe — secondary, drawn second (passes OVER at the crossing) */}
+      <path
+        d="M 32,20 C 32,8 56,8 56,20 C 56,32 32,32 32,20 Z"
+        stroke={secondary}
+      />
+      {/* Tiny gap punched through the under-stroke at the crossing for true ribbon weave */}
+      <path
+        d="M 28,17 L 32,20 L 36,23"
+        stroke="white"
+        strokeWidth="2.5"
+        opacity="0"
       />
     </svg>
   );
@@ -121,7 +129,7 @@ export function LoopMark() {
       </div>
 
       <div className="h-14 bg-white border-t border-zinc-200 flex items-center px-6 text-[13px] text-zinc-600 italic">
-        A flowing script S, looped behind by a continuous teal arc — the spoken loop that lives behind every script.
+        A two-tone Möbius infinity — script (violet) and voice (teal) weaving through a single continuous loop.
       </div>
     </div>
   );
