@@ -8,6 +8,7 @@ export const modules: ModuleMap = {
   "./components/mockups/scriptloop-logos/KnotS.tsx": () => import("../components/mockups/scriptloop-logos/KnotS.tsx"),
   "./components/mockups/scriptloop-logos/LoopMark.tsx": () => import("../components/mockups/scriptloop-logos/LoopMark.tsx"),
   "./components/mockups/scriptloop-logos/RibbonS.tsx": () => import("../components/mockups/scriptloop-logos/RibbonS.tsx"),
+  "./components/mockups/scriptloop-logos/SlimS.tsx": () => import("../components/mockups/scriptloop-logos/SlimS.tsx"),
   "./components/mockups/scriptloop-logos/TiltedS.tsx": () => import("../components/mockups/scriptloop-logos/TiltedS.tsx"),
   "./components/mockups/scriptloop-logos/VerticalMobius.tsx": () => import("../components/mockups/scriptloop-logos/VerticalMobius.tsx"),
   "./components/mockups/scriptloop-minimal/Dashboard.tsx": () => import("../components/mockups/scriptloop-minimal/Dashboard.tsx"),

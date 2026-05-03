@@ -13,16 +13,15 @@ const Mark: React.FC<MarkProps> = ({
     strokeLinecap="round"
     strokeLinejoin="round"
   >
-    {/* Teal back-arc — bulges around the OUTSIDE (right of S center), like the back
-        of a ribbon swooping behind to reconnect — clearer Möbius geometry */}
+    {/* Teal back-arc — swings around the right side to reconnect tips */}
     <path
-      d="M 12,46 C 30,52 60,38 52,18"
+      d="M 22,46 C 38,55 55,38 42,18"
       stroke={secondary}
       strokeWidth="8"
     />
-    {/* Violet S */}
+    {/* Violet S — skinnier */}
     <path
-      d="M 52,18 C 52,8 28,8 20,16 C 8,28 32,30 32,32 C 32,34 56,36 44,48 C 36,56 12,56 12,46"
+      d="M 42,18 C 42,8 30,8 26,16 C 20,28 32,30 32,32 C 32,34 44,36 38,48 C 34,56 22,56 22,46"
       stroke={primary}
       strokeWidth="9"
     />
@@ -33,7 +32,7 @@ export function VerticalMobius() {
   return (
     <LogoTile
       Mark={Mark}
-      caption="Variation C — Wrapped Möbius S. The teal back-arc swings around the right side of the S to reconnect the tips — emphasizes the closed loop."
+      caption="Variation C — Wrapped Möbius S. Skinnier S with the teal back-arc swinging around the right side to enclose the loop."
     />
   );
 }

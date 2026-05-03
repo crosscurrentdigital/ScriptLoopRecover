@@ -13,16 +13,15 @@ const Mark: React.FC<MarkProps> = ({
     strokeLinecap="round"
     strokeLinejoin="round"
   >
-    {/* Teal "back of ribbon" — connects the bottom-left tip of S to the top-right tip,
-        passing BEHIND the S center. Together they form a single closed Möbius loop. */}
+    {/* Teal back-S — reversed curvature, mirror of the front S */}
     <path
-      d="M 12,46 C 12,32 52,32 52,18"
+      d="M 22,46 C 22,32 42,32 42,18"
       stroke={secondary}
       strokeWidth="8"
     />
-    {/* Violet S — front face of the ribbon. Endpoints (52,18) and (12,46) match the teal. */}
+    {/* Violet front S — skinnier (narrower left-to-right) */}
     <path
-      d="M 52,18 C 52,8 28,8 20,16 C 8,28 32,30 32,32 C 32,34 56,36 44,48 C 36,56 12,56 12,46"
+      d="M 42,18 C 42,8 30,8 26,16 C 20,28 32,30 32,32 C 32,34 44,36 38,48 C 34,56 22,56 22,46"
       stroke={primary}
       strokeWidth="8"
     />
@@ -33,7 +32,7 @@ export function LoopMark() {
   return (
     <LogoTile
       Mark={Mark}
-      caption="Concept 1 — Möbius S. The teal back-of-ribbon connects the two tips of the S, passing behind the center. Together they form a single closed loop with one twist — a true Möbius strip."
+      caption="Concept 1 — Möbius S. Skinnier proportions; the teal back-S mirrors the front S's curvature, completing a flat Möbius loop."
     />
   );
 }
