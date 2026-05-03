@@ -2,14 +2,14 @@
 type ModuleMap = Record<string, () => Promise<Record<string, unknown>>>;
 export const modules: ModuleMap = {
   "./components/mockups/scriptloop-foundation/Board.tsx": () => import("../components/mockups/scriptloop-foundation/Board.tsx"),
-  "./components/mockups/scriptloop-immersive/Dashboard.tsx": () => import("../components/mockups/scriptloop-immersive/Dashboard.tsx"),
-  "./components/mockups/scriptloop-immersive/ScriptDetail.tsx": () => import("../components/mockups/scriptloop-immersive/ScriptDetail.tsx"),
-  "./components/mockups/scriptloop-immersive/ZenMode.tsx": () => import("../components/mockups/scriptloop-immersive/ZenMode.tsx"),
   "./components/mockups/scriptloop-logos/EchoMark.tsx": () => import("../components/mockups/scriptloop-logos/EchoMark.tsx"),
   "./components/mockups/scriptloop-logos/LoopMark.tsx": () => import("../components/mockups/scriptloop-logos/LoopMark.tsx"),
   "./components/mockups/scriptloop-logos/RecallMark.tsx": () => import("../components/mockups/scriptloop-logos/RecallMark.tsx"),
   "./components/mockups/scriptloop-logos/WaveMark.tsx": () => import("../components/mockups/scriptloop-logos/WaveMark.tsx"),
   "./components/mockups/scriptloop-logos/ZenMark.tsx": () => import("../components/mockups/scriptloop-logos/ZenMark.tsx"),
+  "./components/mockups/scriptloop-immersive/Dashboard.tsx": () => import("../components/mockups/scriptloop-immersive/Dashboard.tsx"),
+  "./components/mockups/scriptloop-immersive/ScriptDetail.tsx": () => import("../components/mockups/scriptloop-immersive/ScriptDetail.tsx"),
+  "./components/mockups/scriptloop-immersive/ZenMode.tsx": () => import("../components/mockups/scriptloop-immersive/ZenMode.tsx"),
   "./components/mockups/scriptloop-minimal/Dashboard.tsx": () => import("../components/mockups/scriptloop-minimal/Dashboard.tsx"),
   "./components/mockups/scriptloop-minimal/ScriptDetail.tsx": () => import("../components/mockups/scriptloop-minimal/ScriptDetail.tsx"),
   "./components/mockups/scriptloop-minimal/ZenMode.tsx": () => import("../components/mockups/scriptloop-minimal/ZenMode.tsx"),
