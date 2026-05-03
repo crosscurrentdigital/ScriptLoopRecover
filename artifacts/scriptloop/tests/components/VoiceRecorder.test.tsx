@@ -58,11 +58,14 @@ beforeEach(() => {
       }
     },
   );
-  vi.stubGlobal("URL", {
-    ...URL,
-    createObjectURL: vi.fn(() => "blob:fake"),
-    revokeObjectURL: vi.fn(),
-  });
+  // jsdom doesn't implement these on `URL`, and spreading the
+  // constructor drops them. Assign directly so the unmount cleanup
+  // (which now correctly revokes the latest preview URL via a ref)
+  // has something to call.
+  (URL as unknown as { createObjectURL: (b: Blob) => string }).createObjectURL =
+    vi.fn(() => "blob:fake");
+  (URL as unknown as { revokeObjectURL: (u: string) => void }).revokeObjectURL =
+    vi.fn();
 });
 
 afterEach(() => {
