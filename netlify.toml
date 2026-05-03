@@ -1,0 +1,17 @@
+[build]
+  command = "pnpm --filter @workspace/scriptloop run db:migrate && pnpm run typecheck && pnpm --filter @workspace/scriptloop... run build"
+  publish = "artifacts/scriptloop/dist/public"
+  functions = "artifacts/scriptloop/netlify/functions"
+
+[functions]
+  node_bundler = "esbuild"
+
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
