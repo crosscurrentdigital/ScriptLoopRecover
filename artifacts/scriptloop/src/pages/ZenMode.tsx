@@ -155,7 +155,7 @@ export default function ZenMode() {
   return (
     <ZenShell>
       <article
-        className="zen-text mx-auto max-w-[640px] px-6 py-24 text-center font-serif text-2xl leading-relaxed text-white/85 sm:text-3xl sm:leading-relaxed"
+        className="zen-text reading-surface mx-auto my-16 max-w-[640px] rounded-xl px-8 py-16 text-center shadow-2xl shadow-black/40 sm:my-24 sm:px-12 sm:py-20"
         style={{ whiteSpace: "pre-wrap" }}
       >
         {script.content || "(empty script)"}

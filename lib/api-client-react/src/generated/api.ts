@@ -5,18 +5,25 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import type {
+  MutationFunction,
   QueryFunction,
   QueryKey,
+  UseMutationOptions,
+  UseMutationResult,
   UseQueryOptions,
   UseQueryResult,
 } from "@tanstack/react-query";
 
-import type { HealthStatus } from "./api.schemas";
+import type {
+  HealthStatus,
+  PreferencesEnvelope,
+  UpdateReadingPreferencesBody,
+} from "./api.schemas";
 
 import { customFetch } from "../custom-fetch";
-import type { ErrorType } from "../custom-fetch";
+import type { ErrorType, BodyType } from "../custom-fetch";
 
 type AwaitedInput<T> = PromiseLike<T> | T;
 
@@ -99,3 +106,165 @@ export function useHealthCheck<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * @summary Read the signed-in user's reading preferences
+ */
+export const getGetReadingPreferencesUrl = () => {
+  return `/api/preferences`;
+};
+
+export const getReadingPreferences = async (
+  options?: RequestInit,
+): Promise<PreferencesEnvelope> => {
+  return customFetch<PreferencesEnvelope>(getGetReadingPreferencesUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetReadingPreferencesQueryKey = () => {
+  return [`/api/preferences`] as const;
+};
+
+export const getGetReadingPreferencesQueryOptions = <
+  TData = Awaited<ReturnType<typeof getReadingPreferences>>,
+  TError = ErrorType<void>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getReadingPreferences>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetReadingPreferencesQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getReadingPreferences>>
+  > = ({ signal }) => getReadingPreferences({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getReadingPreferences>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetReadingPreferencesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getReadingPreferences>>
+>;
+export type GetReadingPreferencesQueryError = ErrorType<void>;
+
+/**
+ * @summary Read the signed-in user's reading preferences
+ */
+
+export function useGetReadingPreferences<
+  TData = Awaited<ReturnType<typeof getReadingPreferences>>,
+  TError = ErrorType<void>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getReadingPreferences>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetReadingPreferencesQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Update the signed-in user's reading preferences
+ */
+export const getUpdateReadingPreferencesUrl = () => {
+  return `/api/preferences`;
+};
+
+export const updateReadingPreferences = async (
+  updateReadingPreferencesBody: UpdateReadingPreferencesBody,
+  options?: RequestInit,
+): Promise<PreferencesEnvelope> => {
+  return customFetch<PreferencesEnvelope>(getUpdateReadingPreferencesUrl(), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(updateReadingPreferencesBody),
+  });
+};
+
+export const getUpdateReadingPreferencesMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateReadingPreferences>>,
+    TError,
+    { data: BodyType<UpdateReadingPreferencesBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateReadingPreferences>>,
+  TError,
+  { data: BodyType<UpdateReadingPreferencesBody> },
+  TContext
+> => {
+  const mutationKey = ["updateReadingPreferences"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateReadingPreferences>>,
+    { data: BodyType<UpdateReadingPreferencesBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return updateReadingPreferences(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateReadingPreferencesMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateReadingPreferences>>
+>;
+export type UpdateReadingPreferencesMutationBody =
+  BodyType<UpdateReadingPreferencesBody>;
+export type UpdateReadingPreferencesMutationError = ErrorType<void>;
+
+/**
+ * @summary Update the signed-in user's reading preferences
+ */
+export const useUpdateReadingPreferences = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateReadingPreferences>>,
+    TError,
+    { data: BodyType<UpdateReadingPreferencesBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateReadingPreferences>>,
+  TError,
+  { data: BodyType<UpdateReadingPreferencesBody> },
+  TContext
+> => {
+  return useMutation(getUpdateReadingPreferencesMutationOptions(options));
+};

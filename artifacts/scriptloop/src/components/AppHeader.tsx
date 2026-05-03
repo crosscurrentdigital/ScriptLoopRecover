@@ -28,6 +28,9 @@ export function AppHeader() {
           <Button variant="ghost" size="sm" asChild>
             <Link to="/dashboard">Dashboard</Link>
           </Button>
+          <Button variant="ghost" size="sm" asChild>
+            <Link to="/settings">Settings</Link>
+          </Button>
           {user?.email && (
             <span className="hidden text-sm text-muted-foreground sm:inline">
               {user.email}

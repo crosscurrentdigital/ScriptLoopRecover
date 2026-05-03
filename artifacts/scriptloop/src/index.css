@@ -90,3 +90,36 @@
     @apply font-sans antialiased bg-background text-foreground;
   }
 }
+
+:root {
+  --reading-font: system-ui, -apple-system, sans-serif;
+  --reading-bg: #faf6ee;
+  --reading-fg: #333333;
+  --reading-letter-spacing: 0px;
+  --reading-line-height: 1.6;
+  --reading-font-size: 18px;
+}
+
+.reading-surface {
+  font-family: var(--reading-font);
+  color: var(--reading-fg);
+  background-color: var(--reading-bg);
+  letter-spacing: var(--reading-letter-spacing);
+  line-height: var(--reading-line-height);
+  font-size: var(--reading-font-size);
+}
+
+.reading-text {
+  font-family: var(--reading-font);
+  color: var(--reading-fg);
+  letter-spacing: var(--reading-letter-spacing);
+  line-height: var(--reading-line-height);
+  font-size: var(--reading-font-size);
+}
+
+.reading-focus:focus-visible {
+  outline: 3px solid #6d28d9;
+  outline-offset: 3px;
+  box-shadow: 0 0 0 2px #ffffff;
+  border-radius: 6px;
+}

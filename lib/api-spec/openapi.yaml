@@ -10,6 +10,8 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: preferences
+    description: Per-user reading preferences
 paths:
   /healthz:
     get:
@@ -24,6 +26,46 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /preferences:
+    get:
+      operationId: getReadingPreferences
+      tags: [preferences]
+      summary: Read the signed-in user's reading preferences
+      responses:
+        "200":
+          description: Current preferences (reading may be null when unset)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PreferencesEnvelope"
+        "401":
+          description: Unauthorized
+    put:
+      operationId: updateReadingPreferences
+      tags: [preferences]
+      summary: Update the signed-in user's reading preferences
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [reading]
+              properties:
+                reading:
+                  $ref: "#/components/schemas/ReadingPreferences"
+      responses:
+        "200":
+          description: Updated preferences
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PreferencesEnvelope"
+        "400":
+          description: Invalid request
+        "401":
+          description: Unauthorized
 components:
   schemas:
     HealthStatus:
@@ -33,4 +75,47 @@ components:
           type: string
       required:
         - status
+    ReadingPreferences:
+      type: object
+      additionalProperties: false
+      required:
+        - fontFamily
+        - backgroundColor
+        - textColor
+        - letterSpacing
+        - lineHeight
+        - fontSize
+      properties:
+        fontFamily:
+          type: string
+          minLength: 1
+          maxLength: 64
+        backgroundColor:
+          type: string
+          minLength: 1
+          maxLength: 64
+        textColor:
+          type: string
+          minLength: 1
+          maxLength: 64
+        letterSpacing:
+          type: number
+          minimum: 0
+          maximum: 8
+        lineHeight:
+          type: number
+          minimum: 1
+          maximum: 3
+        fontSize:
+          type: integer
+          minimum: 10
+          maximum: 48
+    PreferencesEnvelope:
+      type: object
+      required: [reading]
+      properties:
+        reading:
+          oneOf:
+            - $ref: "#/components/schemas/ReadingPreferences"
+            - type: "null"
 

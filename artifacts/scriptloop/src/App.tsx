@@ -18,6 +18,8 @@ import { AppHeader } from "@/components/AppHeader";
 import { Footer } from "@/components/Footer";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { SentryTestTrigger } from "@/components/SentryTestTrigger";
+import SettingsPage from "@/pages/SettingsPage";
+import { ReadingPreferencesProvider } from "@/hooks/useReadingPreferences";
 
 const queryClient = new QueryClient();
 
@@ -124,6 +126,14 @@ function AppRoutes() {
             </BareProtectedRoute>
           }
         />
+        <Route
+          path="/settings"
+          element={
+            <ProtectedRoute withFooter>
+              <SettingsPage />
+            </ProtectedRoute>
+          }
+        />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
       <SentryTestTrigger />
@@ -139,7 +149,9 @@ function App() {
         basename={import.meta.env.BASE_URL?.replace(/\/$/, "") ?? ""}
         future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
       >
-        <AppRoutes />
+        <ReadingPreferencesProvider>
+          <AppRoutes />
+        </ReadingPreferencesProvider>
       </BrowserRouter>
     </QueryClientProvider>
   );

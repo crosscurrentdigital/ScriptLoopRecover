@@ -14,3 +14,144 @@ import * as zod from "zod";
 export const HealthCheckResponse = zod.object({
   status: zod.string(),
 });
+
+/**
+ * @summary Read the signed-in user's reading preferences
+ */
+export const getReadingPreferencesResponseReadingOneFontFamilyMax = 64;
+
+export const getReadingPreferencesResponseReadingOneBackgroundColorMax = 64;
+
+export const getReadingPreferencesResponseReadingOneTextColorMax = 64;
+
+export const getReadingPreferencesResponseReadingOneLetterSpacingMin = 0;
+export const getReadingPreferencesResponseReadingOneLetterSpacingMax = 8;
+
+export const getReadingPreferencesResponseReadingOneLineHeightMax = 3;
+
+export const getReadingPreferencesResponseReadingOneFontSizeMin = 10;
+export const getReadingPreferencesResponseReadingOneFontSizeMax = 48;
+
+export const GetReadingPreferencesResponse = zod.object({
+  reading: zod.union([
+    zod.object({
+      fontFamily: zod
+        .string()
+        .min(1)
+        .max(getReadingPreferencesResponseReadingOneFontFamilyMax),
+      backgroundColor: zod
+        .string()
+        .min(1)
+        .max(getReadingPreferencesResponseReadingOneBackgroundColorMax),
+      textColor: zod
+        .string()
+        .min(1)
+        .max(getReadingPreferencesResponseReadingOneTextColorMax),
+      letterSpacing: zod
+        .number()
+        .min(getReadingPreferencesResponseReadingOneLetterSpacingMin)
+        .max(getReadingPreferencesResponseReadingOneLetterSpacingMax),
+      lineHeight: zod
+        .number()
+        .min(1)
+        .max(getReadingPreferencesResponseReadingOneLineHeightMax),
+      fontSize: zod
+        .number()
+        .min(getReadingPreferencesResponseReadingOneFontSizeMin)
+        .max(getReadingPreferencesResponseReadingOneFontSizeMax),
+    }),
+    zod.null(),
+  ]),
+});
+
+/**
+ * @summary Update the signed-in user's reading preferences
+ */
+export const updateReadingPreferencesBodyReadingFontFamilyMax = 64;
+
+export const updateReadingPreferencesBodyReadingBackgroundColorMax = 64;
+
+export const updateReadingPreferencesBodyReadingTextColorMax = 64;
+
+export const updateReadingPreferencesBodyReadingLetterSpacingMin = 0;
+export const updateReadingPreferencesBodyReadingLetterSpacingMax = 8;
+
+export const updateReadingPreferencesBodyReadingLineHeightMax = 3;
+
+export const updateReadingPreferencesBodyReadingFontSizeMin = 10;
+export const updateReadingPreferencesBodyReadingFontSizeMax = 48;
+
+export const UpdateReadingPreferencesBody = zod.object({
+  reading: zod.object({
+    fontFamily: zod
+      .string()
+      .min(1)
+      .max(updateReadingPreferencesBodyReadingFontFamilyMax),
+    backgroundColor: zod
+      .string()
+      .min(1)
+      .max(updateReadingPreferencesBodyReadingBackgroundColorMax),
+    textColor: zod
+      .string()
+      .min(1)
+      .max(updateReadingPreferencesBodyReadingTextColorMax),
+    letterSpacing: zod
+      .number()
+      .min(updateReadingPreferencesBodyReadingLetterSpacingMin)
+      .max(updateReadingPreferencesBodyReadingLetterSpacingMax),
+    lineHeight: zod
+      .number()
+      .min(1)
+      .max(updateReadingPreferencesBodyReadingLineHeightMax),
+    fontSize: zod
+      .number()
+      .min(updateReadingPreferencesBodyReadingFontSizeMin)
+      .max(updateReadingPreferencesBodyReadingFontSizeMax),
+  }),
+});
+
+export const updateReadingPreferencesResponseReadingOneFontFamilyMax = 64;
+
+export const updateReadingPreferencesResponseReadingOneBackgroundColorMax = 64;
+
+export const updateReadingPreferencesResponseReadingOneTextColorMax = 64;
+
+export const updateReadingPreferencesResponseReadingOneLetterSpacingMin = 0;
+export const updateReadingPreferencesResponseReadingOneLetterSpacingMax = 8;
+
+export const updateReadingPreferencesResponseReadingOneLineHeightMax = 3;
+
+export const updateReadingPreferencesResponseReadingOneFontSizeMin = 10;
+export const updateReadingPreferencesResponseReadingOneFontSizeMax = 48;
+
+export const UpdateReadingPreferencesResponse = zod.object({
+  reading: zod.union([
+    zod.object({
+      fontFamily: zod
+        .string()
+        .min(1)
+        .max(updateReadingPreferencesResponseReadingOneFontFamilyMax),
+      backgroundColor: zod
+        .string()
+        .min(1)
+        .max(updateReadingPreferencesResponseReadingOneBackgroundColorMax),
+      textColor: zod
+        .string()
+        .min(1)
+        .max(updateReadingPreferencesResponseReadingOneTextColorMax),
+      letterSpacing: zod
+        .number()
+        .min(updateReadingPreferencesResponseReadingOneLetterSpacingMin)
+        .max(updateReadingPreferencesResponseReadingOneLetterSpacingMax),
+      lineHeight: zod
+        .number()
+        .min(1)
+        .max(updateReadingPreferencesResponseReadingOneLineHeightMax),
+      fontSize: zod
+        .number()
+        .min(updateReadingPreferencesResponseReadingOneFontSizeMin)
+        .max(updateReadingPreferencesResponseReadingOneFontSizeMax),
+    }),
+    zod.null(),
+  ]),
+});

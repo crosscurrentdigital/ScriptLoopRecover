@@ -7,3 +7,6 @@
  */
 
 export * from "./healthStatus";
+export * from "./preferencesEnvelope";
+export * from "./readingPreferences";
+export * from "./updateReadingPreferencesBody";

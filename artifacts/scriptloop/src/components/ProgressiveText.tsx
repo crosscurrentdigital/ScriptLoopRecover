@@ -86,7 +86,7 @@ export function ProgressiveText({
   return (
     <div className={cn("space-y-3", className)}>
       <div
-        className="whitespace-pre-wrap font-mono text-sm leading-relaxed"
+        className="reading-surface whitespace-pre-wrap rounded-md border p-4"
         data-testid="progressive-text"
       >
         {tokens.length === 0 ? (

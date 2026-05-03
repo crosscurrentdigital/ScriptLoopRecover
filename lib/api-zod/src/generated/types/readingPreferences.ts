@@ -5,9 +5,6 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-export interface HealthStatus {
-  status: string;
-}
 
 export interface ReadingPreferences {
   /**
@@ -41,11 +38,3 @@ export interface ReadingPreferences {
    */
   fontSize: number;
 }
-
-export interface PreferencesEnvelope {
-  reading: ReadingPreferences | null;
-}
-
-export type UpdateReadingPreferencesBody = {
-  reading: ReadingPreferences;
-};

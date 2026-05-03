@@ -8,6 +8,7 @@ import {
   uuid,
   boolean,
   unique,
+  jsonb,
 } from "drizzle-orm/pg-core";
 
 const neonAuthSchema = pgSchema("neon_auth");
@@ -64,3 +65,22 @@ export const rateLimits = pgTable(
 );
 
 export type RateLimit = typeof rateLimits.$inferSelect;
+
+export interface ReadingPreferencesData {
+  fontFamily: string;
+  backgroundColor: string;
+  textColor: string;
+  letterSpacing: number;
+  lineHeight: number;
+  fontSize: number;
+}
+
+export const userPreferences = pgTable("user_preferences", {
+  userId: uuid("user_id")
+    .primaryKey()
+    .references(() => authUser.id, { onDelete: "cascade" }),
+  reading: jsonb("reading").$type<ReadingPreferencesData>(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+});
+
+export type UserPreferences = typeof userPreferences.$inferSelect;
