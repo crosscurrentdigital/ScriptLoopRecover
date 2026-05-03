@@ -11,3 +11,21 @@ id = "G5uLRy3MrkN41-UmeZ9LJ"
 uri = "file://.local/submissions/buildathon-description.md"
 type = "text"
 title = "ScriptLoop — Buildathon Submission Description"
+
+[[outputs]]
+id = "aYt_3zbgl-3N8pJimFxM9"
+uri = "file://artifacts/scriptloop/public/buildathon/project-image-1200.png"
+type = "image"
+title = "ScriptLoop Buildathon Cover (1200×1200)"
+
+[[outputs]]
+id = "NpPj-SdLfhN7rBvd8RzHb"
+uri = "file://artifacts/scriptloop/public/buildathon/project-image-1200.jpg"
+type = "image"
+title = "ScriptLoop Buildathon Cover — JPG fallback"
+
+[[outputs]]
+id = "FApcuHfBkcDek7M-5tSnH"
+uri = "file://artifacts/scriptloop/public/buildathon/project-image-og-1200x630.png"
+type = "image"
+title = "ScriptLoop OG / Social Variant (1200×630)"
