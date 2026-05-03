@@ -2,6 +2,8 @@
 
 > **History rewrite (May 3, 2026):** git history was rewritten to scrub a leaked `GITHUB_TOKEN` that had been committed to `.replit:45` in old commit `9d9eb12` ("Published your App"). The literal token string was replaced with `***REDACTED***` across all blobs via `git filter-repo`. New `main` HEAD after the rewrite is `64846c65650470f53a6a03093f27bfd1f661e7f8`. Anyone with a clone of the old history must re-clone; commit SHAs from before the rewrite no longer match.
 
+> **Deploy target (May 3, 2026):** Netlify, configured via the root `netlify.toml`. The Replit autoscale config in `artifacts/api-server/.replit-artifact/artifact.toml` is no longer the production target — frontend + functions ship from `crosscurrentdigital/ScriptLoopRecover` `main` to Netlify.
+
 ## Overview
 
 pnpm workspace monorepo using TypeScript. The primary artifact is ScriptLoop — a production memorization tool.
