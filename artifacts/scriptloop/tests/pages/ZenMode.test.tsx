@@ -11,7 +11,10 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 
-vi.mock("@/hooks/use-mobile", () => ({ useIsMobile: () => false }));
+const mobileFlag = { current: false };
+vi.mock("@/hooks/use-mobile", () => ({
+  useIsMobile: () => mobileFlag.current,
+}));
 
 vi.mock("@/components/ui/select", () => {
   const React = require("react");
@@ -95,6 +98,7 @@ beforeEach(() => {
   globalThis.fetch = vi.fn();
   HTMLMediaElement.prototype.play = vi.fn(() => Promise.resolve());
   HTMLMediaElement.prototype.pause = vi.fn();
+  mobileFlag.current = false;
 });
 afterEach(() => {
   cleanup();
@@ -227,6 +231,169 @@ describe("ZenMode", () => {
     expect(
       await screen.findByText(/Generate audio first/),
     ).toBeInTheDocument();
+  });
+
+  it("isMobile=true keeps controls visible without auto-hide listeners", async () => {
+    mobileFlag.current = true;
+    (globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValue(
+      mockJson({
+        id: 1,
+        userId: "u",
+        title: "Z",
+        content: "mobile body",
+        audioUrl: "https://x/a.mp3",
+        audioSource: null,
+        voiceId: "v",
+        loopGapSeconds: 2,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      }),
+    );
+    const qc = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    render(<ZenMode />, { wrapper: wrap(qc) });
+    expect(await screen.findByText("mobile body")).toBeInTheDocument();
+    // Mousemove should not toggle anything in the mobile branch.
+    fireEvent.mouseMove(window);
+    expect(
+      screen.getByRole("toolbar", { name: /Zen Mode controls/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("Escape key exits to detail and Space toggles play", async () => {
+    (globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValue(
+      mockJson({
+        id: 1,
+        userId: "u",
+        title: "Z",
+        content: "kbd body",
+        audioUrl: "https://x/a.mp3",
+        audioSource: null,
+        voiceId: "v",
+        loopGapSeconds: 0,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      }),
+    );
+    const qc = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    render(<ZenMode />, { wrapper: wrap(qc) });
+    await screen.findByText("kbd body");
+
+    // Space dispatched from a non-interactive element toggles play.
+    await act(async () => {
+      document.body.dispatchEvent(
+        new KeyboardEvent("keydown", {
+          key: " ",
+          code: "Space",
+          bubbles: true,
+        }),
+      );
+    });
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "Pause" }),
+      ).toBeInTheDocument(),
+    );
+
+    // A repeat keydown is ignored (covers the early-return branch).
+    await act(async () => {
+      document.body.dispatchEvent(
+        new KeyboardEvent("keydown", {
+          key: " ",
+          code: "Space",
+          repeat: true,
+          bubbles: true,
+        }),
+      );
+    });
+
+    // Modifier keys are ignored too.
+    await act(async () => {
+      document.body.dispatchEvent(
+        new KeyboardEvent("keydown", {
+          key: "Escape",
+          metaKey: true,
+          bubbles: true,
+        }),
+      );
+    });
+    expect(screen.queryByTestId("detail")).not.toBeInTheDocument();
+
+    // Escape exits.
+    await act(async () => {
+      document.body.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Escape", bubbles: true }),
+      );
+    });
+    await waitFor(() =>
+      expect(screen.getByTestId("detail")).toBeInTheDocument(),
+    );
+  });
+
+  it("Escape pressed while focused on a button still exits", async () => {
+    (globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValue(
+      mockJson({
+        id: 1,
+        userId: "u",
+        title: "Z",
+        content: "focus body",
+        audioUrl: "https://x/a.mp3",
+        audioSource: null,
+        voiceId: "v",
+        loopGapSeconds: 2,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      }),
+    );
+    const qc = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    render(<ZenMode />, { wrapper: wrap(qc) });
+    const playBtn = await screen.findByRole("button", { name: "Play" });
+    playBtn.focus();
+    await act(async () => {
+      playBtn.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Escape", bubbles: true }),
+      );
+    });
+    await waitFor(() =>
+      expect(screen.getByTestId("detail")).toBeInTheDocument(),
+    );
+  });
+
+  it("Space pressed while focused on a button is ignored by the global handler", async () => {
+    (globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValue(
+      mockJson({
+        id: 1,
+        userId: "u",
+        title: "Z",
+        content: "ignore body",
+        audioUrl: "https://x/a.mp3",
+        audioSource: null,
+        voiceId: "v",
+        loopGapSeconds: 2,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      }),
+    );
+    const qc = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    render(<ZenMode />, { wrapper: wrap(qc) });
+    const playBtn = await screen.findByRole("button", { name: "Play" });
+    playBtn.focus();
+    await act(async () => {
+      playBtn.dispatchEvent(
+        new KeyboardEvent("keydown", { key: " ", code: "Space", bubbles: true }),
+      );
+    });
+    // No toggle to "Pause" should have happened from the global listener.
+    expect(
+      screen.queryByRole("button", { name: "Pause" }),
+    ).not.toBeInTheDocument();
   });
 
   it("shows error on script fetch failure", async () => {
