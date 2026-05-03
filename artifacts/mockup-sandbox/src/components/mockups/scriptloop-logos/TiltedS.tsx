@@ -13,12 +13,12 @@ const Mark: React.FC<MarkProps> = ({
     strokeLinecap="round"
     strokeLinejoin="round"
   >
-    {/* Italic-leaning teal back-stripe */}
-    <path d="M 10,38 L 50,26" stroke={secondary} strokeWidth="8" />
-    {/* Italic-leaning violet S — slight rightward slant */}
     <g transform="rotate(-8 32 32)">
+      {/* Teal straight back-line connecting S tips through center */}
+      <path d="M 12,46 L 52,18" stroke={secondary} strokeWidth="8" />
+      {/* Violet S, italicized */}
       <path
-        d="M 52,18 C 52,10 30,8 22,16 C 10,26 32,30 32,32 C 32,34 54,38 42,48 C 32,56 12,54 12,46"
+        d="M 52,18 C 52,8 28,8 20,16 C 8,28 32,30 32,32 C 32,34 56,36 44,48 C 36,56 12,56 12,46"
         stroke={primary}
         strokeWidth="9"
       />
@@ -30,7 +30,7 @@ export function TiltedS() {
   return (
     <LogoTile
       Mark={Mark}
-      caption="Variation E — Italic Möbius S. An italicized S with a teal stripe angling behind the center — feels dynamic and editorial."
+      caption="Variation E — Italic Möbius S. Same closed-loop construction, italicized for an editorial feel."
     />
   );
 }

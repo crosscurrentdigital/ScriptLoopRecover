@@ -13,11 +13,15 @@ const Mark: React.FC<MarkProps> = ({
     strokeLinecap="round"
     strokeLinejoin="round"
   >
-    {/* Teal back-of-ribbon stripe — diagonal, suggests a 3D twist */}
-    <path d="M 12,22 L 52,42" stroke={secondary} strokeWidth="8" />
+    {/* Teal back-of-ribbon — slight curve so the back face has a 3D feel */}
+    <path
+      d="M 12,46 Q 22,38 42,26 T 52,18"
+      stroke={secondary}
+      strokeWidth="9"
+    />
     {/* Bold violet S */}
     <path
-      d="M 52,18 C 52,8 28,8 20,16 C 8,28 32,30 32,32 C 32,34 56,36 44,48 C 36,56 12,56 12,46"
+      d="M 52,18 C 52,6 26,6 18,16 C 6,28 32,30 32,32 C 32,34 58,36 46,48 C 38,58 12,58 12,46"
       stroke={primary}
       strokeWidth="10"
     />
@@ -28,7 +32,7 @@ export function RibbonS() {
   return (
     <LogoTile
       Mark={Mark}
-      caption="Variation B (refined) — Twisted Ribbon S. A bold S with a teal stripe angling behind the center, the back face of the Möbius twist showing through."
+      caption="Variation B — Bold Möbius S. Heavier weight; the teal back-face curves slightly behind the center, suggesting the natural arc of a twisted ribbon."
     />
   );
 }
