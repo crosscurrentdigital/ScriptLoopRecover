@@ -1,5 +1,7 @@
 # ScriptLoop Workspace
 
+> **History rewrite (May 3, 2026):** git history was rewritten to scrub a leaked `GITHUB_TOKEN` that had been committed to `.replit:45` in old commit `9d9eb12` ("Published your App"). The literal token string was replaced with `***REDACTED***` across all blobs via `git filter-repo`. New `main` HEAD after the rewrite is `64846c65650470f53a6a03093f27bfd1f661e7f8`. Anyone with a clone of the old history must re-clone; commit SHAs from before the rewrite no longer match.
+
 ## Overview
 
 pnpm workspace monorepo using TypeScript. The primary artifact is ScriptLoop — a production memorization tool.
