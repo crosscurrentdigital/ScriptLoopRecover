@@ -12,21 +12,18 @@ const Mark: React.FC<MarkProps> = ({
     fill="none"
     strokeLinecap="round"
     strokeLinejoin="round"
-    strokeWidth="5"
   >
+    {/* Teal back-stripe — gentle arc, like the back of the ribbon curving around */}
     <path
-      d="M 44,20 C 28,20 22,30 32,34 C 42,38 38,46 22,46"
+      d="M 12,28 Q 32,40 52,28"
+      stroke={secondary}
+      strokeWidth="7"
+    />
+    {/* Violet S */}
+    <path
+      d="M 52,18 C 52,10 30,8 22,16 C 10,26 32,30 32,32 C 32,34 54,38 42,48 C 32,56 12,54 12,46"
       stroke={primary}
-    />
-    <path
-      d="M 44,20 C 56,12 58,24 50,26 C 44,27 42,22 44,20 Z"
-      stroke={secondary}
-      strokeWidth="4"
-    />
-    <path
-      d="M 22,46 C 10,54 8,42 16,40 C 22,39 24,44 22,46 Z"
-      stroke={secondary}
-      strokeWidth="4"
+      strokeWidth="9"
     />
   </svg>
 );
@@ -35,7 +32,7 @@ export function KnotS() {
   return (
     <LogoTile
       Mark={Mark}
-      caption="Variation C — Calligraphic Knot S. A flowing S with teal flourish loops at each tip — the endpoints curl back, closing the form into an infinity knot."
+      caption="Variation D — Curved Back S. The teal connection line arcs gently behind the S center, hinting at the curvature of the ribbon's underside."
     />
   );
 }

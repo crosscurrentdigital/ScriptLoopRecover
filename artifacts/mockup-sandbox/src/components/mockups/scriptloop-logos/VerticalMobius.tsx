@@ -8,19 +8,18 @@ const Mark: React.FC<MarkProps> = ({
 }) => (
   <svg
     className={className}
-    viewBox="0 0 40 64"
+    viewBox="0 0 64 64"
     fill="none"
     strokeLinecap="round"
     strokeLinejoin="round"
-    strokeWidth="5"
   >
+    {/* Teal back-stripe — short horizontal, only peeks out around the center crossing */}
+    <path d="M 14,32 L 50,32" stroke={secondary} strokeWidth="9" />
+    {/* Violet S — geometric, slightly chunkier */}
     <path
-      d="M 20,32 C 8,32 8,8 20,8 C 32,8 32,32 20,32 Z"
+      d="M 50,16 C 50,10 30,8 22,14 C 12,22 30,30 32,32 C 34,34 52,40 44,50 C 36,58 14,56 14,48"
       stroke={primary}
-    />
-    <path
-      d="M 20,32 C 8,32 8,56 20,56 C 32,56 32,32 20,32 Z"
-      stroke={secondary}
+      strokeWidth="11"
     />
   </svg>
 );
@@ -29,7 +28,7 @@ export function VerticalMobius() {
   return (
     <LogoTile
       Mark={Mark}
-      caption="Variation A — Vertical Möbius. The two-tone infinity stood on end so it reads top-to-bottom as a stacked figure-8 / S."
+      caption="Variation C — Bold Möbius S. Heavy geometric S with a thick teal connection line passing behind the center — the most literal ribbon read."
     />
   );
 }

@@ -8,20 +8,19 @@ const Mark: React.FC<MarkProps> = ({
 }) => (
   <svg
     className={className}
-    viewBox="0 0 64 40"
+    viewBox="0 0 64 64"
     fill="none"
     strokeLinecap="round"
     strokeLinejoin="round"
-    strokeWidth="5"
   >
-    <g transform="rotate(-22 32 20)">
+    {/* Italic-leaning teal back-stripe */}
+    <path d="M 10,38 L 50,26" stroke={secondary} strokeWidth="8" />
+    {/* Italic-leaning violet S — slight rightward slant */}
+    <g transform="rotate(-8 32 32)">
       <path
-        d="M 32,20 C 32,32 8,32 8,20 C 8,8 32,8 32,20 Z"
+        d="M 52,18 C 52,10 30,8 22,16 C 10,26 32,30 32,32 C 32,34 54,38 42,48 C 32,56 12,54 12,46"
         stroke={primary}
-      />
-      <path
-        d="M 32,20 C 32,8 56,8 56,20 C 56,32 32,32 32,20 Z"
-        stroke={secondary}
+        strokeWidth="9"
       />
     </g>
   </svg>
@@ -31,7 +30,7 @@ export function TiltedS() {
   return (
     <LogoTile
       Mark={Mark}
-      caption="Variation D — Tilted Lemniscate. The two-tone infinity rotated -22° so the whole shape leans into an italic-S posture while keeping the woven crossing."
+      caption="Variation E — Italic Möbius S. An italicized S with a teal stripe angling behind the center — feels dynamic and editorial."
     />
   );
 }
