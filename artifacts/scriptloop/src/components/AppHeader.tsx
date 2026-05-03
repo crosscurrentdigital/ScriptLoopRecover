@@ -1,6 +1,7 @@
 import { Link, useNavigate } from "react-router-dom";
 import { authClient } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
+import { BrandMark, BRAND } from "@/lib/brand";
 
 export function AppHeader() {
   const session = authClient.useSession();
@@ -20,9 +21,16 @@ export function AppHeader() {
       <div className="container mx-auto flex items-center justify-between gap-3 px-4 py-3">
         <Link
           to="/dashboard"
-          className="inline-flex min-h-11 items-center text-xl font-semibold tracking-tight active:opacity-80 sm:min-h-0 sm:hover:opacity-80"
+          aria-label={`${BRAND.name} home`}
+          className="inline-flex min-h-11 items-center gap-2 active:opacity-80 sm:min-h-0 sm:hover:opacity-80"
         >
-          ScriptLoop
+          <BrandMark className="h-7 w-7" title={`${BRAND.name} logo`} />
+          <span
+            className="text-xl font-semibold tracking-tight"
+            style={{ fontFamily: BRAND.font }}
+          >
+            {BRAND.name}
+          </span>
         </Link>
         <nav className="flex items-center gap-3">
           <Button variant="ghost" size="sm" asChild>

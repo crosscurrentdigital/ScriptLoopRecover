@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 64" fill="none" font-family="Space Grotesk, system-ui, sans-serif">
+  <g stroke-linecap="round" stroke-linejoin="round" stroke-width="6">
+    <path d="M 22,46 C 22,32 42,32 42,18" stroke="#2DD4BF"/>
+    <path d="M 42,18 C 42,8 30,8 26,16 C 20,28 32,30 32,32 C 32,34 44,36 38,48 C 34,56 22,56 22,46" stroke="#A78BFA"/>
+  </g>
+  <text x="76" y="44" fill="#FFFFFF" font-size="32" font-weight="700" letter-spacing="-0.5">ScriptLoop</text>
+</svg>
