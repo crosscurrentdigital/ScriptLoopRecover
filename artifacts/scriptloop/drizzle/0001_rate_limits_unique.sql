@@ -11,14 +11,31 @@
 -- The original baseline migration created the table without this
 -- constraint, so this migration backfills it.
 --
--- Made idempotent + dup-safe so it can be applied to production where
--- ON CONFLICT may have been silently failing and leaving duplicate
--- (user_id, route, window_start) rows behind:
---   1. Sum the duplicates' counts into the lowest-id row.
---   2. Delete the now-redundant duplicates.
---   3. ADD CONSTRAINT inside a DO block so a re-run is a no-op when the
---      constraint is already present.
+-- Hardened to be safe against three states:
+--   1. A healthy DB where rate_limits exists with data: dedup any
+--      duplicate (user_id, route, window_start) tuples that may have
+--      accumulated, then add the constraint.
+--   2. A healthy DB where rate_limits already has the constraint: the
+--      ALTER inside the DO block catches duplicate_object and no-ops.
+--   3. An out-of-sync ledger where __drizzle_migrations records
+--      0000_baseline as applied but baseline DDL never actually ran
+--      (so rate_limits is missing): the leading CREATE TABLE IF NOT
+--      EXISTS recreates rate_limits with the same definition baseline
+--      uses, the dedup steps then run against an empty table (no-op),
+--      and the constraint is added. This guarantees the deploy ends
+--      with a usable rate_limits in place rather than silently
+--      "applying" the migration against nothing.
 
+CREATE TABLE IF NOT EXISTS "rate_limits" (
+        "id" serial PRIMARY KEY NOT NULL,
+        "user_id" uuid NOT NULL,
+        "route" text NOT NULL,
+        "window_start" timestamp with time zone NOT NULL,
+        "count" integer DEFAULT 0 NOT NULL,
+        "created_at" timestamp with time zone DEFAULT now(),
+        "updated_at" timestamp with time zone DEFAULT now()
+);
+--> statement-breakpoint
 WITH dups AS (
   SELECT user_id, route, window_start,
          MIN(id) AS keep_id,

@@ -1,0 +1,225 @@
+3:30:23 AM: build-image version: ac6eb13fbf000e5c09ad677efd8b7c3c2d0142b6 (noble-new-builds)
+3:30:23 AM: buildbot version: 1e1f172b82fc46a7a7b4b14d04d14163b44b9b01
+3:30:23 AM: Building with cache
+3:30:23 AM: Starting to prepare the repo for build
+3:30:23 AM: Preparing Git Reference refs/heads/main
+3:30:25 AM: Custom publish path detected. Proceeding with the specified path: 'artifacts/scriptloop/dist/public'
+3:30:25 AM: Custom functions path detected. Proceeding with the specified path: 'artifacts/scriptloop/netlify/functions'
+3:30:25 AM: Custom build command detected. Proceeding with the specified command: 'pnpm --filter @workspace/scriptloop run db:migrate && pnpm run typecheck && pnpm --filter @workspace/scriptloop... run build'
+3:30:25 AM: Installing dependencies
+3:30:25 AM: mise ~/.config/mise/config.toml tools: python@3.14.3
+3:30:25 AM: mise ~/.config/mise/config.toml tools: ruby@3.4.8
+3:30:25 AM: mise ~/.config/mise/config.toml tools: go@1.26.2
+3:30:26 AM: v22.22.2 is already installed.
+3:30:26 AM: Now using node v22.22.2 (npm v10.9.7)
+3:30:26 AM: Enabling Node.js Corepack
+3:30:26 AM: pnpm workspaces detected
+3:30:27 AM: Installing npm packages using pnpm version 10.30.3
+3:30:27 AM: Scope: all 9 workspace projects
+3:30:27 AM: Lockfile is up to date, resolution step is skipped
+3:30:27 AM: Progress: resolved 1, reused 0, downloaded 0, added 0
+3:30:27 AM: Packages: +886
+3:30:27 AM: ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+3:30:28 AM: Progress: resolved 886, reused 0, downloaded 312, added 305
+3:30:29 AM: Progress: resolved 886, reused 0, downloaded 605, added 602
+3:30:30 AM: Progress: resolved 886, reused 0, downloaded 884, added 885
+3:30:30 AM: Progress: resolved 886, reused 0, downloaded 885, added 886, done
+3:30:30 AM: .../esbuild@0.27.3/node_modules/esbuild postinstall$ node install.js
+3:30:30 AM: .../esbuild@0.27.3/node_modules/esbuild postinstall: Done
+3:30:31 AM: dependencies:
+3:30:31 AM: + @replit/connectors-sdk 0.4.0
+3:30:31 AM: devDependencies:
+3:30:31 AM: + prettier 3.8.1
+3:30:31 AM: + typescript 5.9.3
+3:30:31 AM: . preinstall$ sh -c 'rm -f package-lock.json yarn.lock; case "$npm_config_user_agent" in pnpm/*) ;; *) echo "Use pnpm instead" >&2; exit 1 ;; esac'
+3:30:31 AM: . preinstall: Done
+3:30:31 AM: Done in 4.6s using pnpm v10.30.3
+3:30:31 AM: npm packages installed using pnpm
+3:30:31 AM: Successfully installed dependencies
+3:30:32 AM: Detected 0 framework(s)
+3:30:32 AM: Starting build script
+3:30:33 AM: Section completed: initializing
+3:30:34 AM: ​
+3:30:34 AM: Netlify Build                                                 
+3:30:34 AM: ────────────────────────────────────────────────────────────────
+3:30:34 AM: ​
+3:30:34 AM: ❯ Version
+3:30:34 AM:   @netlify/build 35.13.4
+3:30:34 AM: ​
+3:30:34 AM: ❯ Flags
+3:30:34 AM:   accountId: 68828c3e6052f77f8c859d01
+3:30:34 AM:   baseRelDir: true
+3:30:34 AM:   buildId: 69f715ae5a130c0008eb5c43
+3:30:34 AM:   deployId: 69f715ae5a130c0008eb5c45
+3:30:34 AM: ​
+3:30:34 AM: ❯ Current directory
+3:30:34 AM:   /opt/build/repo
+3:30:34 AM: ​
+3:30:34 AM: ❯ Config file
+3:30:34 AM:   /opt/build/repo/netlify.toml
+3:30:34 AM: ​
+3:30:34 AM: ❯ Context
+3:30:34 AM:   production
+3:30:34 AM: ​
+3:30:34 AM: build.command from netlify.toml                               
+3:30:34 AM: ────────────────────────────────────────────────────────────────
+3:30:34 AM: ​
+3:30:34 AM: $ pnpm --filter @workspace/scriptloop run db:migrate && pnpm run typecheck && pnpm --filter @workspace/scriptloop... run build
+3:30:34 AM: > @workspace/scriptloop@0.0.0 db:migrate /opt/build/repo/artifacts/scriptloop
+3:30:34 AM: > drizzle-kit migrate
+3:30:35 AM: Failed during stage 'building site': Build script returned non-zero exit code: 2 (https://ntl.fyi/exit-code-2)
+3:30:35 AM: No config path provided, using default 'drizzle.config.ts'
+3:30:35 AM: Reading config file '/opt/build/repo/artifacts/scriptloop/drizzle.config.ts'
+3:30:35 AM: Using 'pg' driver for database querying
+3:30:35 AM: [⣷] applying migrations...(node:2410) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+3:30:35 AM: In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+3:30:35 AM: To prepare for this change:
+3:30:35 AM: - If you want the current behavior, explicitly use 'sslmode=verify-full'
+3:30:35 AM: - If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+3:30:35 AM: See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+3:30:35 AM: (Use `node --trace-warnings ...` to show where the warning was created)
+3:30:35 AM: [⣯] applying migrations...DrizzleQueryError: Failed query: -- Add the unique constraint that rateLimits.checkAndIncrement() relies on.
+3:30:35 AM: --
+3:30:35 AM: -- The handler calls
+3:30:35 AM: --   .onConflictDoUpdate({ target: [user_id, route, window_start], ... })
+3:30:35 AM: -- which compiles to
+3:30:35 AM: --   INSERT ... ON CONFLICT (user_id, route, window_start) DO UPDATE ...
+3:30:35 AM: -- Postgres requires a matching UNIQUE (or exclusion) constraint on those
+3:30:35 AM: -- columns or the upsert raises:
+3:30:35 AM: --   ERROR: there is no unique or exclusion constraint matching the
+3:30:35 AM: --   ON CONFLICT specification
+3:30:35 AM: -- The original baseline migration created the table without this
+3:30:35 AM: -- constraint, so this migration backfills it.
+3:30:35 AM: --
+3:30:35 AM: -- Made idempotent + dup-safe so it can be applied to production where
+3:30:35 AM: -- ON CONFLICT may have been silently failing and leaving duplicate
+3:30:35 AM: -- (user_id, route, window_start) rows behind:
+3:30:35 AM: --   1. Sum the duplicates' counts into the lowest-id row.
+--   2. Delete the now-redundant duplicates.
+3:30:35 AM: --   3. ADD CONSTRAINT inside a DO block so a re-run is a no-op when the
+3:30:35 AM: --      constraint is already present.
+3:30:35 AM: WITH dups AS (
+3:30:35 AM:   SELECT user_id, route, window_start,
+3:30:35 AM:          MIN(id) AS keep_id,
+3:30:35 AM:          SUM(count)::int AS total
+3:30:35 AM:   FROM "rate_limits"
+3:30:35 AM:   GROUP BY user_id, route, window_start
+3:30:35 AM:   HAVING COUNT(*) > 1
+3:30:35 AM: )
+3:30:35 AM: UPDATE "rate_limits" rl
+3:30:35 AM: SET count = d.total
+3:30:35 AM: FROM dups d
+3:30:35 AM: WHERE rl.id = d.keep_id;
+3:30:35 AM: params:
+3:30:35 AM:     at NodePgPreparedQuery.queryWithCache (/opt/build/repo/node_modules/.pnpm/drizzle-orm@0.45.2_@electric-sql+pglite@0.3.16_@neondatabase+serverless@0.10.4_@opentel_ec66252cc0b193b7dc5a633e44f58645/node_modules/src/pg-core/session.ts:73:11)
+3:30:35 AM:     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+3:30:35 AM:     at async <anonymous> (/opt/build/repo/node_modules/.pnpm/drizzle-orm@0.45.2_@electric-sql+pglite@0.3.16_@neondatabase+serverless@0.10.4_@opentel_ec66252cc0b193b7dc5a633e44f58645/node_modules/src/pg-core/dialect.ts:102:7)
+3:30:35 AM:     ... 2 lines matching cause stack trace ...
+3:30:35 AM:     at async migrate (/opt/build/repo/node_modules/.pnpm/drizzle-orm@0.45.2_@electric-sql+pglite@0.3.16_@neondatabase+serverless@0.10.4_@opentel_ec66252cc0b193b7dc5a633e44f58645/node_modules/src/node-postgres/migrator.ts:10:2) {
+3:30:35 AM:   query: '-- Add the unique constraint that rateLimits.checkAndIncrement() relies on.\n' +
+3:30:35 AM:     '--\n' +
+3:30:35 AM:     '-- The handler calls\n' +
+3:30:35 AM:     '--   .onConflictDoUpdate({ target: [user_id, route, window_start], ... })\n' +
+3:30:35 AM:     '-- which compiles to\n' +
+3:30:35 AM:     '--   INSERT ... ON CONFLICT (user_id, route, window_start) DO UPDATE ...\n' +
+3:30:35 AM:     '-- Postgres requires a matching UNIQUE (or exclusion) constraint on those\n' +
+3:30:35 AM:     '-- columns or the upsert raises:\n' +
+3:30:35 AM:     '--   ERROR: there is no unique or exclusion constraint matching the\n' +
+3:30:35 AM:     '--   ON CONFLICT specification\n' +
+3:30:35 AM:     '-- The original baseline migration created the table without this\n' +
+3:30:35 AM:     '-- constraint, so this migration backfills it.\n' +
+3:30:35 AM:     '--\n' +
+3:30:35 AM:     '-- Made idempotent + dup-safe so it can be applied to production where\n' +
+3:30:35 AM:     '-- ON CONFLICT may have been silently failing and leaving duplicate\n' +
+3:30:35 AM:     '-- (user_id, route, window_start) rows behind:\n' +
+3:30:35 AM:     "--   1. Sum the duplicates' counts into the lowest-id row.\n" +
+3:30:35 AM:     '--   2. Delete the now-redundant duplicates.\n' +
+3:30:35 AM:     '--   3. ADD CONSTRAINT inside a DO block so a re-run is a no-op when the\n' +
+3:30:35 AM:     '--      constraint is already present.\n' +
+3:30:35 AM:     '\n' +
+3:30:35 AM:     'WITH dups AS (\n' +
+3:30:35 AM:     '  SELECT user_id, route, window_start,\n' +
+3:30:35 AM:     '         MIN(id) AS keep_id,\n' +
+3:30:35 AM:     '         SUM(count)::int AS total\n' +
+3:30:35 AM:     '  FROM "rate_limits"\n' +
+3:30:35 AM:     '  GROUP BY user_id, route, window_start\n' +
+3:30:35 AM:     '  HAVING COUNT(*) > 1\n' +
+3:30:35 AM:     ')\n' +
+3:30:35 AM:     'UPDATE "rate_limits" rl\n' +
+3:30:35 AM:     'SET count = d.total\n' +
+3:30:35 AM:     'FROM dups d\n' +
+3:30:35 AM:     'WHERE rl.id = d.keep_id;\n',
+3:30:35 AM:   params: [],
+3:30:35 AM:   cause: error: relation "rate_limits" does not exist
+3:30:35 AM:       at /opt/build/repo/node_modules/.pnpm/pg@8.20.0/node_modules/pg/lib/client.js:631:17
+3:30:35 AM:       at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+3:30:35 AM:       at async <anonymous> (/opt/build/repo/node_modules/.pnpm/drizzle-orm@0.45.2_@electric-sql+pglite@0.3.16_@neondatabase+serverless@0.10.4_@opentel_ec66252cc0b193b7dc5a633e44f58645/node_modules/src/node-postgres/session.ts:149:14)
+3:30:35 AM:       at async NodePgPreparedQuery.queryWithCache (/opt/build/repo/node_modules/.pnpm/drizzle-orm@0.45.2_@electric-sql+pglite@0.3.16_@neondatabase+serverless@0.10.4_@opentel_ec66252cc0b193b7dc5a633e44f58645/node_modules/src/pg-core/session.ts:71:12)
+3:30:35 AM:       at async <anonymous> (/opt/build/repo/node_modules/.pnpm/drizzle-orm@0.45.2_@electric-sql+pglite@0.3.16_@neondatabase+serverless@0.10.4_@opentel_ec66252cc0b193b7dc5a633e44f58645/node_modules/src/pg-core/dialect.ts:102:7)
+3:30:35 AM:       at async NodePgSession.transaction (/opt/build/repo/node_modules/.pnpm/drizzle-orm@0.45.2_@electric-sql+pglite@0.3.16_@neondatabase+serverless@0.10.4_@opentel_ec66252cc0b193b7dc5a633e44f58645/node_modules/src/node-postgres/session.ts:259:19)
+3:30:35 AM:       at async PgDialect.migrate (/opt/build/repo/node_modules/.pnpm/drizzle-orm@0.45.2_@electric-sql+pglite@0.3.16_@neondatabase+serverless@0.10.4_@opentel_ec66252cc0b193b7dc5a633e44f58645/node_modules/src/pg-core/dialect.ts:95:3)
+3:30:35 AM:       at async migrate (/opt/build/repo/node_modules/.pnpm/drizzle-orm@0.45.2_@electric-sql+pglite@0.3.16_@neondatabase+serverless@0.10.4_@opentel_ec66252cc0b193b7dc5a633e44f58645/node_modules/src/node-postgres/migrator.ts:10:2) {
+3:30:35 AM:     length: 112,
+3:30:35 AM:     severity: 'ERROR',
+3:30:35 AM:     code: '42P01',
+3:30:35 AM:     detail: undefined,
+3:30:35 AM:     hint: undefined,
+3:30:35 AM:     position: '1118',
+3:30:35 AM:     internalPosition: undefined,
+3:30:35 AM:     internalQuery: undefined,
+3:30:35 AM:     where: undefined,
+3:30:35 AM:     schema: undefined,
+3:30:35 AM:     table: undefined,
+3:30:35 AM:     column: undefined,
+3:30:35 AM:     dataType: undefined,
+3:30:35 AM:     constraint: undefined,
+3:30:35 AM:     file: 'parse_relation.c',
+3:30:35 AM:     line: '1449',
+3:30:35 AM:     routine: 'parserOpenTable'
+3:30:35 AM:   }
+3:30:35 AM: }
+3:30:35 AM: /opt/build/repo/artifacts/scriptloop:
+3:30:35 AM:  ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @workspace/scriptloop@0.0.0 db:migrate: `drizzle-kit migrate`
+3:30:35 AM: Exit status 1
+3:30:35 AM: ​
+3:30:35 AM: "build.command" failed                                        
+3:30:35 AM: ────────────────────────────────────────────────────────────────
+3:30:35 AM: ​
+3:30:35 AM:   Error message
+3:30:35 AM:   Command failed with exit code 1: pnpm --filter @workspace/scriptloop run db:migrate && pnpm run typecheck && pnpm --filter @workspace/scriptloop... run build (https://ntl.fyi/exit-code-1)
+3:30:35 AM: ​
+3:30:35 AM:   Error location
+3:30:35 AM:   In build.command from netlify.toml:
+3:30:35 AM:   pnpm --filter @workspace/scriptloop run db:migrate && pnpm run typecheck && pnpm --filter @workspace/scriptloop... run build
+3:30:35 AM: ​
+3:30:35 AM:   Resolved config
+3:30:35 AM:   build:
+3:30:35 AM:     command: pnpm --filter @workspace/scriptloop run db:migrate && pnpm run
+3:30:35 AM:       typecheck && pnpm --filter @workspace/scriptloop... run build
+3:30:35 AM:     commandOrigin: config
+3:30:35 AM:     environment:
+3:30:35 AM:       - DATABASE_URL
+3:30:35 AM:       - ELEVENLABE_API_KEY
+3:30:35 AM:       - R2_ACCESS_KEY_ID
+3:30:35 AM:       - R2_ACCOUNT_ID
+3:30:35 AM:       - R2_BUCKET_NAME
+3:30:35 AM:       - R2_PUBLIC_URL
+3:30:35 AM:       - R2_SECRET_ACCESS_KEY
+3:30:35 AM:       - VITE_NEON_AUTH_URL
+3:30:35 AM:     publish: /opt/build/repo/artifacts/scriptloop/dist/public
+3:30:35 AM:     publishOrigin: config
+3:30:35 AM:   functions:
+3:30:35 AM:     "*":
+3:30:35 AM:       node_bundler: esbuild
+3:30:35 AM:   functionsDirectory: /opt/build/repo/artifacts/scriptloop/netlify/functions
+3:30:35 AM:   redirects:
+3:30:35 AM:     - from: /api/*
+      status: 200
+      to: /.netlify/functions/:splat
+    - from: /*
+      status: 200
+      to: /index.html
+  redirectsOrigin: config
+3:30:35 AM: Build failed due to a user error: Build script returned non-zero exit code: 2
+3:30:35 AM: Failing build: Failed to build site
+3:30:36 AM: Finished processing build request in 12.73s

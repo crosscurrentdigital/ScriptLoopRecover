@@ -35,51 +35,57 @@
 }
 
 :root {
-  --background: 0 0% 100%;
-  --foreground: 224 71.4% 4.1%;
+  /* Brand: editorial-light. Paper background, ink text,
+     violet primary, teal accent. Tokens mirror lib/brand.tsx. */
+  --background: 0 0% 98%;            /* #FAFAFA paper */
+  --foreground: 0 0% 4%;              /* #0A0A0A ink */
   --card: 0 0% 100%;
-  --card-foreground: 224 71.4% 4.1%;
+  --card-foreground: 0 0% 4%;
   --popover: 0 0% 100%;
-  --popover-foreground: 224 71.4% 4.1%;
-  --primary: 262.1 83.3% 57.8%;
-  --primary-foreground: 210 20% 98%;
-  --secondary: 220 14.3% 95.9%;
-  --secondary-foreground: 220.9 39.3% 11%;
-  --muted: 220 14.3% 95.9%;
-  --muted-foreground: 220 8.9% 46.1%;
-  --accent: 220 14.3% 95.9%;
-  --accent-foreground: 220.9 39.3% 11%;
-  --destructive: 0 84.2% 60.2%;
-  --destructive-foreground: 210 20% 98%;
-  --border: 220 13% 91%;
-  --input: 220 13% 91%;
-  --ring: 262.1 83.3% 57.8%;
+  --popover-foreground: 0 0% 4%;
+  --primary: 262 70% 35%;             /* #4C1D95 violet */
+  --primary-foreground: 0 0% 98%;
+  --secondary: 0 0% 95%;
+  --secondary-foreground: 0 0% 9%;
+  --muted: 0 0% 95%;
+  --muted-foreground: 0 0% 40%;
+  --accent: 172 66% 50%;              /* #2DD4BF tealLight */
+  --accent-foreground: 0 0% 4%;
+  --destructive: 0 72% 45%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 0 0% 89%;
+  --input: 0 0% 89%;
+  --ring: 262 70% 35%;
+  --primary-border: 262 70% 28%;
+  --secondary-border: 0 0% 85%;
 
-  --app-font-sans: system-ui, -apple-system, sans-serif;
-  --app-font-mono: ui-monospace, monospace;
-  --radius: 0.5rem;
+  --app-font-sans: "Space Grotesk", "Inter", system-ui, -apple-system, sans-serif;
+  --app-font-mono: ui-monospace, "Geist Mono", monospace;
+  --radius: 0.625rem;
 }
 
 .dark {
-  --background: 224 71.4% 4.1%;
-  --foreground: 210 20% 98%;
-  --card: 224 71.4% 4.1%;
-  --card-foreground: 210 20% 98%;
-  --popover: 224 71.4% 4.1%;
-  --popover-foreground: 210 20% 98%;
-  --primary: 263.4 70% 50.4%;
-  --primary-foreground: 210 20% 98%;
-  --secondary: 215 27.9% 16.9%;
-  --secondary-foreground: 210 20% 98%;
-  --muted: 215 27.9% 16.9%;
-  --muted-foreground: 217.9 10.6% 64.9%;
-  --accent: 215 27.9% 16.9%;
-  --accent-foreground: 210 20% 98%;
-  --destructive: 0 62.8% 30.6%;
-  --destructive-foreground: 210 20% 98%;
-  --border: 215 27.9% 16.9%;
-  --input: 215 27.9% 16.9%;
-  --ring: 263.4 70% 50.4%;
+  --background: 0 0% 4%;
+  --foreground: 0 0% 98%;
+  --card: 0 0% 7%;
+  --card-foreground: 0 0% 98%;
+  --popover: 0 0% 7%;
+  --popover-foreground: 0 0% 98%;
+  --primary: 258 90% 76%;             /* #A78BFA violetLight */
+  --primary-foreground: 0 0% 4%;
+  --secondary: 0 0% 12%;
+  --secondary-foreground: 0 0% 98%;
+  --muted: 0 0% 12%;
+  --muted-foreground: 0 0% 64%;
+  --accent: 172 66% 50%;
+  --accent-foreground: 0 0% 4%;
+  --destructive: 0 62.8% 40%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 0 0% 16%;
+  --input: 0 0% 16%;
+  --ring: 258 90% 76%;
+  --primary-border: 258 90% 70%;
+  --secondary-border: 0 0% 18%;
 }
 
 @layer base {
@@ -118,7 +124,7 @@
 }
 
 .reading-focus:focus-visible {
-  outline: 3px solid #6d28d9;
+  outline: 3px solid #4C1D95;
   outline-offset: 3px;
   box-shadow: 0 0 0 2px #ffffff;
   border-radius: 6px;

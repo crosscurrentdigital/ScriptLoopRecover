@@ -1,10 +1,25 @@
 # ScriptLoop Workspace
 
+> **Backup remote scrub (May 3, 2026 — Task #60, BLOCKED, requires Replit support):** the `gitsafe-backup` remote (`git://gitsafe:5418/backup.git`) still holds the dirty pre-rewrite history that contains the leaked `GITHUB_TOKEN`. Backup HEAD `976edc45...` still grep-positive for `ghp_fzFY...`. Two cleanup paths from the task's Done criteria are both blocked from inside the workspace:
+> 1. **Force-update backup main to clean HEAD `5203993b...`** — backup server enforces an append-only pre-receive hook ("Non-fast-forward push detected. New commits must be descendants of existing commits"). Even fetching the clean HEAD from GitHub and pushing it is rejected.
+> 2. **Remove the `gitsafe-backup` remote from `.git/config`** — the Replit pid2 daemon (`/pid2/bundles/.../server.cjs`) manages this remote internally (it explicitly filters `gitsafe-backup` out of the user-visible remote list) and re-adds it on the next checkpoint/sync. Verified twice during Task #60: `git remote remove gitsafe-backup` + section/refs cleanup, both times the entry reappeared by the next validation cycle.
+> 3. As a side note, local `main` itself is still grep-positive for the token in commits `9d9eb12` and `11aef40` (history rewrites #1 and #2 left those reachable in HEAD's ancestry), so even if the backup hook accepted force-push, pushing local would not satisfy the "log -S returns nothing" criterion either.
+> 
+> **Action needed:** ask Replit support to either reset/replace the `gitsafe-backup` repo for this Repl with the current clean `main`, or delete it entirely. Until then, anyone running a `restoreSha` from gitsafe (pid2's `restoreSha` RPC) could pull the leaked token back into the workspace.
+
 > **History rewrite #2 (May 3, 2026 — Task #59):** the leaked `GITHUB_TOKEN` re-appeared in local history when Task #55's merge brought back the dirty commits. Re-ran `git filter-repo --replace-text` against local, rebased the Netlify-deploy commits onto the already-clean remote, and force-pushed. New `main` HEAD is `c36e5f747`. Anyone holding a clone of the prior local history must re-clone.
 >
 > **History rewrite (May 3, 2026):** git history was rewritten to scrub a leaked `GITHUB_TOKEN` that had been committed to `.replit:45` in old commit `9d9eb12` ("Published your App"). The literal token string was replaced with `***REDACTED***` across all blobs via `git filter-repo`. New `main` HEAD after the rewrite is `64846c65650470f53a6a03093f27bfd1f661e7f8`. Anyone with a clone of the old history must re-clone; commit SHAs from before the rewrite no longer match.
 
 > **Deploy target (May 3, 2026):** Netlify, configured via the root `netlify.toml`. The Replit autoscale config in `artifacts/api-server/.replit-artifact/artifact.toml` is no longer the production target — frontend + functions ship from `crosscurrentdigital/ScriptLoopRecover` `main` to Netlify.
+
+## Git remotes and shipping (May 2026)
+
+**Replit “GitHub connection” failures:** Replit had stored a **non-clone** URL on the `subrepl-*` remote (`…/ScriptLoopRecover/tree/main`). Git only accepts repo roots such as `https://github.com/crosscurrentdigital/ScriptLoopRecover.git`. A URL with `/tree/branch` makes `git fetch` / deploy hooks fail. Local `.git/config` should use the `.git` form; if Replit rewrites it, fix it in the Repl’s Git panel or Replit support.
+
+**Canonical GitHub remote for this monorepo:** `https://github.com/crosscurrentdigital/ScriptLoopRecover.git` (set as `git remote add origin …` or `git remote set-url origin …`).
+
+**Production:** Still Netlify + root `netlify.toml`; GitHub org/repo is independent of Replit autoscale.
 
 ## Overview
 
